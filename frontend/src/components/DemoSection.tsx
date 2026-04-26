@@ -164,7 +164,9 @@ const DemoSection: React.FC = () => {
         setResult(null);
         setErrorMsg('');
         try {
-            const res = await fetch('/api/predict', {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL;
+            const endpoint = backendUrl ? `${backendUrl}/predict` : '/api/predict';
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: trimmed }),

@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts are loaded in index.html ─── */
+
+@layer base {
+  :root {
+    --background: #060B18;
+    --surface: #0A0F2C;
+    --primary: #00AEEF;
+    --secondary: #00FFB2;
+    --accent: #0077CC;
+    --dangerous: #FF3B3B;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #060B18;
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Selection highlight */
+  ::selection {
+    background: rgba(0, 174, 239, 0.25);
+    color: #fff;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #060B18; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 174, 239, 0.4);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 174, 239, 0.7); }
+}
+
+@layer components {
+  /* ── Glassmorphism variants ── */
+  .glass {
+    @apply bg-white/[0.04] backdrop-blur-xl border border-white/10;
+  }
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/10;
+  }
+  .glass-navy {
+    background: rgba(10, 15, 44, 0.7);
+    @apply backdrop-blur-xl border border-primary/20;
+  }
+  .glass-surface {
+    background: rgba(10, 15, 44, 0.5);
+    @apply backdrop-blur-lg border border-white/10;
+  }
+
+  /* ── Neon borders ── */
+  .neon-border-blue {
+    border: 1px solid rgba(0, 174, 239, 0.5);
+    box-shadow: 0 0 15px rgba(0, 174, 239, 0.15), inset 0 0 15px rgba(0, 174, 239, 0.05);
+  }
+  .neon-border-green {
+    border: 1px solid rgba(0, 255, 178, 0.5);
+    box-shadow: 0 0 15px rgba(0, 255, 178, 0.15), inset 0 0 15px rgba(0, 255, 178, 0.05);
+  }
+  .neon-border-red {
+    border: 1px solid rgba(255, 59, 59, 0.5);
+    box-shadow: 0 0 15px rgba(255, 59, 59, 0.15), inset 0 0 15px rgba(255, 59, 59, 0.05);
+  }
+
+  /* ── Glow text ── */
+  .glow-text-blue {
+    text-shadow: 0 0 20px rgba(0, 174, 239, 0.6), 0 0 40px rgba(0, 174, 239, 0.3);
+  }
+  .glow-text-green {
+    text-shadow: 0 0 20px rgba(0, 255, 178, 0.6), 0 0 40px rgba(0, 255, 178, 0.3);
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 font-bold text-white rounded-xl transition-all duration-300;
+    background: linear-gradient(135deg, #00AEEF, #0077CC);
+    box-shadow: 0 0 20px rgba(0, 174, 239, 0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 35px rgba(0, 174, 239, 0.55), 0 0 70px rgba(0, 174, 239, 0.2);
+    transform: translateY(-1px);
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 font-bold rounded-xl transition-all duration-300;
+    border: 1px solid rgba(0, 174, 239, 0.4);
+    color: rgba(0, 174, 239, 0.9);
+  }
+  .btn-outline:hover {
+    background: rgba(0, 174, 239, 0.1);
+    border-color: rgba(0, 174, 239, 0.7);
+    box-shadow: 0 0 20px rgba(0, 174, 239, 0.2);
+  }
+
+  /* ── Stat cards ── */
+  .stat-card {
+    @apply glass-surface rounded-2xl p-6 flex flex-col gap-1 transition-all duration-300;
+  }
+  .stat-card:hover {
+    border-color: rgba(0, 174, 239, 0.35);
+    box-shadow: 0 0 30px rgba(0, 174, 239, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* ── Pipeline node cards ── */
+  .pipeline-card {
+    @apply rounded-2xl p-5 border backdrop-blur-md transition-all duration-300;
+  }
+
+  /* ── Feature card hover effect ── */
+  .feature-card {
+    @apply glass-surface rounded-2xl p-7 border border-white/10 transition-all duration-300 cursor-default;
+  }
+  .feature-card:hover {
+    border-color: rgba(0, 174, 239, 0.4);
+    box-shadow: 0 0 30px rgba(0, 174, 239, 0.12), 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(-4px);
+  }
+
+  /* ── Badge ── */
+  .badge-safe {
+    @apply px-3 py-1 rounded-full text-xs font-bold;
+    background: rgba(0, 255, 178, 0.1);
+    color: #00FFB2;
+    border: 1px solid rgba(0, 255, 178, 0.3);
+  }
+  .badge-phishing {
+    @apply px-3 py-1 rounded-full text-xs font-bold;
+    background: rgba(255, 59, 59, 0.1);
+    color: #FF3B3B;
+    border: 1px solid rgba(255, 59, 59, 0.3);
+  }
+  .badge-suspicious {
+    @apply px-3 py-1 rounded-full text-xs font-bold;
+    background: rgba(255, 179, 71, 0.1);
+    color: #FFB347;
+    border: 1px solid rgba(255, 179, 71, 0.3);
+  }
+
+  /* ── Section headers ── */
+  .section-label {
+    @apply inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full;
+    border: 1px solid rgba(0, 174, 239, 0.3);
+    background: rgba(0, 174, 239, 0.08);
+    color: #00AEEF;
+  }
+}
+
+@layer utilities {
+  /* Animated blob delay helpers */
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+  .animation-delay-6000 { animation-delay: 6s; }
+
+  /* Grid pattern overlay */
+  .bg-grid {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='%2300AEEF' stroke-width='0.3' stroke-opacity='0.1'/%3E%3C/svg%3E");
+  }
+
+  /* Dot grid overlay */
+  .bg-dots {
+    background-image: radial-gradient(rgba(0,174,239,0.15) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* Radial glow orbs */
+  .glow-orb-blue {
+    background: radial-gradient(circle, rgba(0,174,239,0.25) 0%, transparent 70%);
+  }
+  .glow-orb-green {
+    background: radial-gradient(circle, rgba(0,255,178,0.2) 0%, transparent 70%);
+  }
+
+  /* Text gradient utilities */
+  .text-gradient-blue {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #00AEEF, #00FFB2);
+  }
+  .text-gradient-danger {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #FF3B3B, #FFB347);
+  }
+
+  /* Divider glow */
+  .divider-glow {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,174,239,0.5), transparent);
+  }
+
+  /* ── Canvas particle container ── */
+  #particle-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+}

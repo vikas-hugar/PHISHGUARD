@@ -1,0 +1,364 @@
+import React, { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { ShieldAlert, Activity, Lock, ScanLine, ChevronRight, Zap } from 'lucide-react';
+
+// ── Particle network canvas animation ──
+const ParticleCanvas: React.FC = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const mouseRef = useRef({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let animId: number;
+        const particles: Array<{
+            x: number; y: number; vx: number; vy: number; radius: number; opacity: number;
+        }> = [];
+        const PARTICLE_COUNT = 80;
+        const CONNECTION_DIST = 130;
+
+        const resize = () => {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        const handleMouse = (e: MouseEvent) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        };
+        window.addEventListener('mousemove', handleMouse);
+
+        // Init particles
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: Math.random() * 1.5 + 0.5,
+                opacity: Math.random() * 0.5 + 0.2,
+            });
+        }
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update & draw particles
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 174, 239, ${p.opacity})`;
+                ctx.fill();
+            }
+
+            // Draw connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < CONNECTION_DIST) {
+                        const alpha = (1 - dist / CONNECTION_DIST) * 0.25;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(0, 174, 239, ${alpha})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+
+                // Mouse interaction
+                const mx = mouseRef.current.x;
+                const my = mouseRef.current.y;
+                const dx = particles[i].x - mx;
+                const dy = particles[i].y - my;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 120) {
+                    const alpha = (1 - dist / 120) * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(mx, my);
+                    ctx.strokeStyle = `rgba(0, 255, 178, ${alpha})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+            animId = requestAnimationFrame(draw);
+        };
+        draw();
+
+        return () => {
+            cancelAnimationFrame(animId);
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('mousemove', handleMouse);
+        };
+    }, []);
+
+    return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />;
+};
+
+// ─────────────────────────────────────────────────
+const HeroSection = () => {
+    return (
+        <section className="relative min-h-screen pt-28 pb-20 flex items-center justify-center overflow-hidden">
+            {/* Layered animated background */}
+            <div className="absolute inset-0 z-0">
+                {/* Particle network */}
+                <ParticleCanvas />
+
+                {/* Grid overlay */}
+                <div className="absolute inset-0 bg-grid opacity-100 pointer-events-none" />
+
+                {/* Radial hero glow from top */}
+                <div className="absolute inset-0" style={{
+                    background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,174,239,0.15) 0%, transparent 65%)'
+                }} />
+
+                {/* Animated orbs */}
+                <div className="absolute top-1/4 -left-20 w-[500px] h-[500px] rounded-full animate-blob animation-delay-2000"
+                    style={{ background: 'radial-gradient(circle, rgba(0,174,239,0.12) 0%, transparent 70%)' }} />
+                <div className="absolute bottom-1/4 -right-20 w-[400px] h-[400px] rounded-full animate-blob animation-delay-4000"
+                    style={{ background: 'radial-gradient(circle, rgba(0,255,178,0.1) 0%, transparent 70%)' }} />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-10 items-center">
+
+                    {/* ── Left: Copy ── */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex flex-col gap-7"
+                    >
+                        {/* Animated badge */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15, duration: 0.6 }}
+                            className="inline-flex items-center gap-2.5 w-fit rounded-full px-4 py-2"
+                            style={{
+                                border: '1px solid rgba(0,174,239,0.4)',
+                                background: 'rgba(0,174,239,0.08)',
+                                boxShadow: '0 0 20px rgba(0,174,239,0.15)',
+                            }}
+                        >
+                            <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+                            </span>
+                            <span className="text-xs font-semibold tracking-widest uppercase text-primary">
+                                AI-Powered · Zero-Day Detection
+                            </span>
+                        </motion.div>
+
+                        {/* Headline */}
+                        <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.8 }}
+                            className="text-5xl lg:text-[4.5rem] font-bold tracking-tight leading-[1.08]"
+                        >
+                            Detect Phishing<br />
+                            <span className="bg-clip-text text-transparent"
+                                style={{ backgroundImage: 'linear-gradient(135deg, #00AEEF 0%, #00FFB2 100%)' }}>
+                                Before It Strikes
+                            </span>
+                        </motion.h1>
+
+                        {/* Tagline */}
+                        <motion.p
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.7 }}
+                            className="text-lg text-gray-400 max-w-xl leading-relaxed"
+                        >
+                            Real-time phishing URL detection powered by an <span className="text-primary font-semibold">optimized CNN–LSTM</span> deep learning model. 
+                            Adaptable to zero-day attacks with 99.8% accuracy.
+                        </motion.p>
+
+                        {/* CTA buttons */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4, duration: 0.7 }}
+                            className="flex flex-wrap items-center gap-4"
+                        >
+                            <a href="#demo" className="btn-primary text-base">
+                                <ScanLine className="w-5 h-5" />
+                                Analyze a URL
+                            </a>
+                            <a href="#how-it-works" className="btn-outline text-base">
+                                How It Works
+                                <ChevronRight className="w-5 h-5" />
+                            </a>
+                        </motion.div>
+
+                        {/* Stats row */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.6, duration: 0.8 }}
+                            className="flex items-center gap-10 mt-4 pt-8"
+                            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+                        >
+                            {[
+                                { value: '99.8%', label: 'Detection Accuracy' },
+                                { value: '<0.1s', label: 'Response Time' },
+                                { value: '1.45M+', label: 'URLs Trained On' },
+                            ].map((s, i) => (
+                                <div key={i} className="flex flex-col">
+                                    <span className="text-2xl font-bold text-white glow-text-blue">{s.value}</span>
+                                    <span className="text-xs text-gray-500 mt-0.5">{s.label}</span>
+                                </div>
+                            ))}
+                        </motion.div>
+                    </motion.div>
+
+                    {/* ── Right: Live threat dashboard mockup ── */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.88 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                        className="relative w-full flex items-center justify-center"
+                    >
+                        <div className="relative w-full max-w-lg rounded-2xl p-6 overflow-hidden"
+                            style={{
+                                background: 'rgba(10,15,44,0.75)',
+                                border: '1px solid rgba(0,174,239,0.25)',
+                                backdropFilter: 'blur(24px)',
+                                boxShadow: '0 0 60px rgba(0,174,239,0.12), 0 30px 60px rgba(0,0,0,0.5)',
+                            }}>
+
+                            {/* Top accent line */}
+                            <div className="absolute top-0 left-0 w-full h-px"
+                                style={{ background: 'linear-gradient(90deg, transparent, #00AEEF, #00FFB2, transparent)' }} />
+
+                            {/* Header */}
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-primary" />
+                                    Live Threat Monitor
+                                </h3>
+                                <div className="flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-lg"
+                                    style={{ background: 'rgba(0,255,178,0.1)', color: '#00FFB2', border: '1px solid rgba(0,255,178,0.2)' }}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+                                    System Active
+                                </div>
+                            </div>
+
+                            {/* URL scan items */}
+                            <div className="space-y-3 mb-6">
+                                {[
+                                    { url: 'auth-apple-secure.verify-account.com', status: 'suspicious', prob: '74%', color: '#FFB347' },
+                                    { url: 'paypal-transaction-issue.net/login', status: 'phishing', prob: '99%', color: '#FF3B3B' },
+                                    { url: 'github.com/microsoft/vscode', status: 'safe', prob: '0.1%', color: '#00FFB2' },
+                                ].map((item, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ x: 50, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: 0.5 + i * 0.2 }}
+                                        className="p-3.5 rounded-xl flex justify-between items-center gap-3"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.03)',
+                                            border: `1px solid ${item.color}22`,
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {item.status === 'phishing'
+                                                ? <ShieldAlert className="w-4 h-4 shrink-0" style={{ color: item.color }} />
+                                                : item.status === 'safe'
+                                                    ? <Lock className="w-4 h-4 shrink-0" style={{ color: item.color }} />
+                                                    : <Zap className="w-4 h-4 shrink-0" style={{ color: item.color }} />}
+                                            <span className="text-xs font-mono text-gray-400 truncate">{item.url}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: item.prob }}
+                                                    transition={{ delay: 0.7 + i * 0.2, duration: 0.8 }}
+                                                    className="h-full rounded-full"
+                                                    style={{ background: item.color }}
+                                                />
+                                            </div>
+                                            <span className="text-xs font-bold" style={{ color: item.color }}>{item.prob}</span>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            {/* Mini radar chart decoration */}
+                            <div className="flex items-center gap-6 px-2">
+                                <div className="relative w-16 h-16 flex items-center justify-center">
+                                    <div className="absolute inset-0 rounded-full border border-primary/20" />
+                                    <div className="absolute inset-2 rounded-full border border-primary/15" />
+                                    <div className="absolute inset-4 rounded-full border border-primary/10" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-radar-spin"
+                                        style={{
+                                            background: 'conic-gradient(rgba(0,174,239,0.15) 0deg, transparent 90deg)',
+                                        }} />
+                                    <Activity className="w-4 h-4 text-primary" />
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">CNN-LSTM Pipeline</div>
+                                    <div className="text-sm font-bold text-white">Optimized · Active</div>
+                                    <div className="text-xs text-gray-500 mt-1 font-mono">layers: 1D-CNN → LSTM → Dense</div>
+                                </div>
+                            </div>
+
+                            {/* Floating badges */}
+                            <motion.div
+                                animate={{ y: [0, -8, 0] }}
+                                transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+                                className="absolute -right-4 -top-4 px-3 py-2 rounded-xl text-xs font-bold"
+                                style={{
+                                    background: 'rgba(10,15,44,0.9)',
+                                    border: '1px solid rgba(0,174,239,0.35)',
+                                    backdropFilter: 'blur(12px)',
+                                    boxShadow: '0 0 20px rgba(0,174,239,0.2)',
+                                    color: '#00AEEF',
+                                }}
+                            >
+                                99.8% Accuracy
+                            </motion.div>
+
+                            <motion.div
+                                animate={{ y: [0, 10, 0] }}
+                                transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }}
+                                className="absolute -left-6 bottom-8 px-3 py-2 rounded-xl text-xs font-bold"
+                                style={{
+                                    background: 'rgba(10,15,44,0.9)',
+                                    border: '1px solid rgba(0,255,178,0.3)',
+                                    backdropFilter: 'blur(12px)',
+                                    color: '#00FFB2',
+                                }}
+                            >
+                                Zero-Day Ready
+                            </motion.div>
+                        </div>
+                    </motion.div>
+
+                </div>
+            </div>
+
+            {/* Bottom gradient fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+                style={{ background: 'linear-gradient(to top, #060B18, transparent)' }} />
+        </section>
+    );
+};
+
+export default HeroSection;

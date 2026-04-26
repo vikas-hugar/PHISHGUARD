@@ -7,3 +7,4 @@ gunicorn
 joblib
 tldextract
 validators
+tensorflow

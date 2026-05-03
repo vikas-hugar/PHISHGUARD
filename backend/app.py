@@ -297,7 +297,7 @@ def has_url_shortener(domain):
         "is.gd", "cutt.ly", "shorturl.at", "rebrand.ly",
         "ow.ly", "buff.ly", "bl.ink",
     ]
-    return any(s in domain for s in SHORTENERS)
+    return any(domain == s or domain.endswith("." + s) for s in SHORTENERS)
 
 
 def url_entropy(url):
@@ -315,8 +315,10 @@ def digit_ratio(url):
 
 
 def special_char_ratio(url):
-    specials = sum(1 for c in url if c in "-_.~@!*'();:,/?#[]&=%+$")
-    return specials / max(len(url), 1)
+    # Strip protocol to avoid penalizing short URLs for '://'
+    cleaned = re.sub(r"^https?://", "", url)
+    specials = sum(1 for c in cleaned if c in "-_~@!*'();:,/?#[]&=%+$")
+    return specials / max(len(cleaned), 1)
 
 
 def has_punycode(domain):

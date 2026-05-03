@@ -6,6 +6,7 @@ import re
 import math
 from collections import Counter
 from urllib.parse import urlparse
+import threading
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -14,6 +15,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # PERFORMANCE TOGGLE
 # =========================================
 ENABLE_DEEP_LEARNING = True
+MODEL_READY = False
 
 if ENABLE_DEEP_LEARNING:
     import tensorflow as tf
@@ -564,11 +566,11 @@ def predict():
             })
 
         # ── STEP 2: CNN-BiLSTM Deep Learning ────────
-        if ENABLE_DEEP_LEARNING:
+        if ENABLE_DEEP_LEARNING and MODEL_READY:
             processed  = preprocess_url(url_norm)
             dl_raw     = float(model.predict(processed, verbose=0)[0][0])
         else:
-            # Bypass slow DL calculation, rely entirely on rules later
+            # Bypass slow DL calculation if disabled or still booting
             dl_raw = 0.5 
 
         # ── STEP 3: Rule-Based Heuristic Analysis ───
@@ -630,11 +632,21 @@ def predict():
 # =========================================
 # WARMUP TO PREVENT COLD-START TIMEOUTS
 # =========================================
+def background_warmup():
+    global MODEL_READY
+    try:
+        print("[PhishGuard] Warming up deep learning model in background...")
+        dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
+        model.predict(dummy_seq, verbose=0)
+        MODEL_READY = True
+        print("[PhishGuard] Model warmed up and ready to serve requests!")
+    except Exception as e:
+        print("[PhishGuard] Background warmup failed:", e)
+
 if ENABLE_DEEP_LEARNING:
-    print("[PhishGuard] Warming up deep learning model...")
-    dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
-    model.predict(dummy_seq, verbose=0)
-    print("[PhishGuard] Model warmed up and ready to serve requests!")
+    threading.Thread(target=background_warmup, daemon=True).start()
+else:
+    MODEL_READY = False
 
 # =========================================
 # RUN FLASK APP

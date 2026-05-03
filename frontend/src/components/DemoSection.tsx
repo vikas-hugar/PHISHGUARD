@@ -178,7 +178,7 @@ const DemoSection: React.FC = () => {
                 : 'https://phishguard-npyx.onrender.com/predict';
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for hybrid DL+Rules engine
 
             const res = await fetch(endpoint, {
                 method: 'POST',

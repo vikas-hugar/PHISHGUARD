@@ -502,15 +502,43 @@ def calculate_rule_score(url, domain):
 #                          rule_score adds up to +20 boost
 # =========================================
 
-def hybrid_score(dl_raw, rule_score):
+def hybrid_score(dl_raw, rule_score, dl_available=True):
+    """Fuse CNN-BiLSTM output with rule-based heuristics.
+    
+    When both engines are available, uses weighted fusion:
+      - If both agree (both high or both low) → high-confidence output
+      - If they disagree → the stronger signal dominates, weaker adds a boost
+    
+    When DL is unavailable, rule_score is scaled up to compensate.
+    """
     dl_score = dl_raw * 100
 
-    # The final score dynamically scales based on the strongest signal,
-    # plus a synergy bonus if both the DL model and Rule Engine agree.
-    base = max(dl_score, rule_score)
-    bonus = min(dl_score, rule_score) * 0.3
+    if not dl_available:
+        # DL unavailable: rule engine is sole signal, scale it up
+        return round(min(rule_score * 1.15, 99))
 
-    return round(min(base + bonus, 99))
+    # ── Both engines active: weighted fusion ──
+    # Weight: DL gets 45%, Rules get 55% (rules catch zero-day better)
+    weighted = (dl_score * 0.45) + (rule_score * 0.55)
+
+    # Agreement bonus: if both engines agree, boost confidence
+    both_high = dl_score >= 60 and rule_score >= 50
+    both_low  = dl_score < 30 and rule_score < 25
+
+    if both_high:
+        # Both say phishing → strong agreement boost
+        agreement_boost = min(dl_score, rule_score) * 0.20
+        weighted = max(weighted, max(dl_score, rule_score)) + agreement_boost
+    elif both_low:
+        # Both say safe → suppress any noise
+        weighted = min(weighted, min(dl_score, rule_score) + 5)
+    else:
+        # Disagreement: trust the stronger signal, add minor boost from weaker
+        stronger = max(dl_score, rule_score)
+        weaker   = min(dl_score, rule_score)
+        weighted = stronger + (weaker * 0.15)
+
+    return round(min(weighted, 99))
 
 
 # =========================================
@@ -565,19 +593,40 @@ def predict():
                 "recommendation":    "✅ This URL belongs to a verified trusted domain.",
             })
 
-        # ── STEP 2: CNN-BiLSTM Deep Learning ────────
-        if ENABLE_DEEP_LEARNING and MODEL_READY:
-            processed  = preprocess_url(url_norm)
-            dl_raw     = float(model.predict(processed, verbose=0)[0][0])
-        else:
-            # Bypass slow DL calculation if disabled or still booting
-            dl_raw = 0.5 
+        # ── STEP 2: Run BOTH engines in parallel ────
+        dl_raw = 0.5
+        dl_available = False
 
-        # ── STEP 3: Rule-Based Heuristic Analysis ───
+        # Start DL inference in a thread (non-blocking)
+        dl_result = {}
+        def run_dl():
+            try:
+                processed = preprocess_url(url_norm)
+                dl_result['score'] = float(model.predict(processed, verbose=0)[0][0])
+            except Exception as ex:
+                print(f"[PhishGuard] DL inference error: {ex}")
+
+        if ENABLE_DEEP_LEARNING and MODEL_READY:
+            dl_thread = threading.Thread(target=run_dl, daemon=True)
+            dl_thread.start()
+        else:
+            dl_thread = None
+
+        # Run heuristics on main thread (instant)
         rule_score, reasons = calculate_rule_score(url_norm, domain)
 
-        # ── STEP 4: Hybrid Score ────────────────────
-        final_score = hybrid_score(dl_raw, rule_score)
+        # Wait for DL thread to finish (max 5 seconds)
+        if dl_thread is not None:
+            dl_thread.join(timeout=5.0)
+            if 'score' in dl_result:
+                dl_raw = dl_result['score']
+                dl_available = True
+                print(f"[PhishGuard] Hybrid: DL={dl_raw:.3f}, Rules={rule_score}")
+            else:
+                print(f"[PhishGuard] DL timed out, using rules only (score={rule_score})")
+
+        # ── STEP 3: Hybrid Fusion ───────────────────
+        final_score = hybrid_score(dl_raw, rule_score, dl_available)
 
         # ── STEP 5: Hard overrides ──────────────────
         in_apex, _ab, ab_has_modifier = brand_in_apex_domain(domain)

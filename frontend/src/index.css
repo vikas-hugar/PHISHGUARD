@@ -205,8 +205,3 @@
     z-index: 0;
   }
 }
-
-@media (hover: hover) and (pointer: fine) {
-  body { cursor: none; }
-  a, button, input, [role="button"] { cursor: none !important; }
-}

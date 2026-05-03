@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Loader2, ShieldCheck, ShieldAlert, AlertTriangle,
@@ -148,64 +148,6 @@ const getResultIcon = (pred?: string) => {
     if (pred === 'Phishing') return <AlertTriangle className="w-9 h-9" />;
     if (pred === 'Suspicious') return <ShieldAlert className="w-9 h-9" />;
     return <ShieldCheck className="w-9 h-9" />;
-};
-
-// ── Terminal Simulation Component ──
-const TerminalSimulation: React.FC = () => {
-    const [logs, setLogs] = useState<string[]>([]);
-    
-    const sequence = [
-        "> [SYS] Initializing hybrid detection engine...",
-        "> [SYS] Parsing URL lexical structure...",
-        "> [SYS] Checking trusted domain whitelist...",
-        "> [DL] Loading CNN-BiLSTM weights (1D-CNN \u2192 LSTM \u2192 Dense)...",
-        "> [DL] Tokenizing character sequence...",
-        "> [DL] Extracting spatial features via 128-filter CNN...",
-        "> [DL] Analyzing temporal dependencies via Bidirectional LSTM...",
-        "> [HEUR] Calculating domain entropy and obfuscation...",
-        "> [HEUR] Scanning for typosquatting and homoglyphs...",
-        "> [SYS] Fusing predictive scores...",
-        "> [SYS] Generating final threat verdict..."
-    ];
-
-    useEffect(() => {
-        let currentIndex = 0;
-        const interval = setInterval(() => {
-            if (currentIndex < sequence.length) {
-                setLogs(prev => [...prev, sequence[currentIndex]]);
-                currentIndex++;
-            } else {
-                clearInterval(interval);
-            }
-        }, 300); // Add a new log every 300ms
-        
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <div className="w-full bg-[#0a0f2c] border border-primary/20 rounded-xl p-4 font-mono text-[11px] md:text-xs text-left h-48 overflow-hidden relative shadow-[inset_0_0_20px_rgba(0,174,239,0.05)]">
-            <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(rgba(0,174,239,0.05)_1px,transparent_1px)] bg-[length:100%_4px] pointer-events-none opacity-50 z-10" />
-            <div className="flex flex-col gap-1.5 absolute bottom-4 left-4 right-4 z-0">
-                {logs.map((log, i) => (
-                    <motion.div 
-                        key={i} 
-                        initial={{ opacity: 0, x: -10 }} 
-                        animate={{ opacity: 1, x: 0 }}
-                        className={log.includes('[DL]') ? 'text-primary glow-text-blue' : log.includes('[HEUR]') ? 'text-secondary glow-text-green' : 'text-gray-400'}
-                    >
-                        {log}
-                    </motion.div>
-                ))}
-                {logs.length < sequence.length && (
-                    <motion.div 
-                        animate={{ opacity: [1, 0] }} 
-                        transition={{ repeat: Infinity, duration: 0.8 }}
-                        className="w-2 h-4 bg-primary inline-block mt-1"
-                    />
-                )}
-            </div>
-        </div>
-    );
 };
 
 // ─────────────────────────────────────────────────
@@ -444,17 +386,36 @@ const DemoSection: React.FC = () => {
                             >
                                 <div className="pt-6 flex flex-col items-center text-center gap-6"
                                     style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                                    
-                                    <div className="w-full flex items-center justify-between px-2 mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                                            <span className="text-white font-bold text-lg tracking-wide">Analysis in Progress...</span>
-                                        </div>
-                                        <span className="text-xs font-mono text-primary animate-pulse">SYSTEM_ACTIVE</span>
+                                    <RadarScan />
+                                    <div>
+                                        <p className="text-white font-bold text-lg mb-1">Deep Learning Analysis Running…</p>
+                                        <p className="text-sm text-gray-500 font-mono">CNN feature extraction → LSTM sequence analysis</p>
                                     </div>
-                                    
-                                    <TerminalSimulation />
-                                    
+                                    {/* Progress bar */}
+                                    <div className="w-full max-w-sm h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                        <motion.div
+                                            className="h-full rounded-full"
+                                            style={{ background: 'linear-gradient(90deg, #00AEEF, #00FFB2)' }}
+                                            initial={{ width: '0%' }}
+                                            animate={{ width: '100%' }}
+                                            transition={{ duration: 2.2, ease: 'easeInOut' }}
+                                        />
+                                    </div>
+                                    {/* Tech labels */}
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {['Tokenizing URL', 'Running CNN filters', 'LSTM sequence', 'Scoring output'].map((t, i) => (
+                                            <motion.span
+                                                key={t}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: i * 0.5 }}
+                                                className="text-xs px-3 py-1 rounded-full font-mono"
+                                                style={{ background: 'rgba(0,174,239,0.08)', border: '1px solid rgba(0,174,239,0.2)', color: '#00AEEF' }}
+                                            >
+                                                {t}
+                                            </motion.span>
+                                        ))}
+                                    </div>
                                 </div>
                             </motion.div>
                         )}

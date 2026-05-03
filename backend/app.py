@@ -48,6 +48,24 @@ GLOBAL_STATS = {
 }
 RECENT_SCANS = deque(maxlen=7)
 
+def log_to_global_stats(url, prediction_result, confidence_score):
+    GLOBAL_STATS["total"] += 1
+    GLOBAL_STATS["confSum"] += confidence_score
+    
+    if prediction_result == "Phishing":
+        GLOBAL_STATS["phishing"] += 1
+    elif prediction_result == "Safe":
+        GLOBAL_STATS["safe"] += 1
+    else:
+        GLOBAL_STATS["suspicious"] += 1
+
+    RECENT_SCANS.appendleft({
+        "url": url,
+        "result": prediction_result,
+        "confidence": confidence_score,
+        "timestamp": int(time.time() * 1000)
+    })
+
 @app.route("/stats", methods=["GET"])
 def get_stats():
     return jsonify({
@@ -605,6 +623,7 @@ def predict():
 
         # ── STEP 1: Whitelist check ──────────────────
         if domain in TRUSTED_DOMAINS:
+            log_to_global_stats(url, "Safe", 96)
             return jsonify({
                 "status":            "success",
                 "url":               url,
@@ -683,22 +702,7 @@ def predict():
         recommendation = build_recommendation(prediction_result, reasons)
 
         # ── Update Global Stats ────────────────────
-        GLOBAL_STATS["total"] += 1
-        GLOBAL_STATS["confSum"] += confidence_score
-        
-        if prediction_result == "Phishing":
-            GLOBAL_STATS["phishing"] += 1
-        elif prediction_result == "Safe":
-            GLOBAL_STATS["safe"] += 1
-        else:
-            GLOBAL_STATS["suspicious"] += 1
-
-        RECENT_SCANS.appendleft({
-            "url": url,
-            "result": prediction_result,
-            "confidence": confidence_score,
-            "timestamp": int(time.time() * 1000)
-        })
+        log_to_global_stats(url, prediction_result, confidence_score)
 
         return jsonify({
             "status":            "success",

@@ -1,10 +1,4 @@
 flask
 flask-cors
-scikit-learn
-pandas
-numpy
 gunicorn
-joblib
-tldextract
-validators
 tensorflow-cpu

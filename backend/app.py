@@ -13,9 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # =========================================
 # PERFORMANCE TOGGLE
 # =========================================
-# Set to False to disable Deep Learning and rely purely on Heuristics.
-# This prevents 60s+ timeouts on Render's free tier CPU limit.
-ENABLE_DEEP_LEARNING = False
+ENABLE_DEEP_LEARNING = True
 
 if ENABLE_DEEP_LEARNING:
     import tensorflow as tf
@@ -174,6 +172,7 @@ LEET_MAP = {
 # =========================================
 
 if ENABLE_DEEP_LEARNING:
+    print("[PhishGuard] Initializing CNN-BiLSTM architecture...")
     model = Sequential()
     model.add(Embedding(input_dim=MAX_WORDS, output_dim=128))
     model.add(Conv1D(filters=128, kernel_size=5, activation="relu"))
@@ -184,17 +183,21 @@ if ENABLE_DEEP_LEARNING:
     model.add(Dense(1, activation="sigmoid"))
     model.build(input_shape=(None, MAX_LEN))
 
-    # Load trained weights
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    model.load_weights(os.path.join(BASE_DIR, "phishing_weights.weights.h5"))
+    model_path = os.path.join(BASE_DIR, "phishing_weights.weights.h5")
+    tokenizer_path = os.path.join(BASE_DIR, "tokenizer.pkl")
 
-    # Load tokenizer
-    with open(os.path.join(BASE_DIR, "tokenizer.pkl"), "rb") as handle:
-        tokenizer = pickle.load(handle)
-
-    print("[PhishGuard] CNN-BiLSTM model loaded successfully.")
+    try:
+        model.load_weights(model_path)
+        with open(tokenizer_path, "rb") as handle:
+            tokenizer = pickle.load(handle)
+        print("[PhishGuard] CNN-BiLSTM model and tokenizer loaded successfully.")
+    except Exception as e:
+        print(f"[PhishGuard] ERROR loading model/tokenizer: {e}")
+        print("[PhishGuard] Falling back to FAST MODE (Heuristics Only).")
+        ENABLE_DEEP_LEARNING = False
 else:
-    print("[PhishGuard] FAST MODE ENABLED: Deep Learning disabled. Running purely on Heuristics.")
+    print("[PhishGuard] FAST MODE ENABLED: Deep Learning disabled.")
 
 # =========================================
 # URL PREPROCESSING

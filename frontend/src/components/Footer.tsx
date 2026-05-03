@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
                             </span>
                         </div>
                         <p className="text-gray-500 text-sm leading-relaxed max-w-sm mb-6">
-                            A state-of-the-art CNN-LSTM deep learning model engineered to detect and prevent zero-day phishing attacks in real-time.
+                            A state-of-the-art CNN–BiLSTM deep learning model engineered to detect and prevent zero-day phishing attacks in real-time.
                             Final Year Engineering Project.
                         </p>
                         <div className="flex items-center gap-3 mb-6">
@@ -135,7 +135,7 @@ const Footer: React.FC = () => {
                 <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
                     style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <p className="text-gray-600 text-xs font-mono">
-                        © {new Date().getFullYear()} PhishGuard AI — Final Year Project · CNN-LSTM Phishing Detection
+                        © {new Date().getFullYear()} PhishGuard AI — Final Year Project · CNN–BiLSTM Phishing Detection
                     </p>
                     <div className="flex gap-6 text-xs text-gray-600">
                         <a href="#" className="hover:text-gray-400 transition-colors">Privacy</a>

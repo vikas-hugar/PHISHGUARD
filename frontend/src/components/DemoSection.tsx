@@ -308,7 +308,7 @@ const DemoSection: React.FC = () => {
                         Analyze a <span className="text-gradient-blue">URL</span>
                     </h2>
                     <p className="text-gray-400 text-lg">
-                        Powered by a trained CNN–LSTM model. Paste any URL and get an instant threat verdict.
+                        Powered by a trained CNN–BiLSTM model. Paste any URL and get an instant threat verdict.
                     </p>
                 </motion.div>
 

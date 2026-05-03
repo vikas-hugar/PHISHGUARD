@@ -24,7 +24,7 @@ const AboutSection: React.FC = () => {
                         The <span className="text-gradient-blue">Zero-Day</span> Problem
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        Traditional detection systems fail against previously unseen phishing attacks. Our research proposes an adaptable CNN-LSTM framework that learns patterns — not blacklists.
+                        Traditional detection systems fail against previously unseen phishing attacks. Our research proposes an adaptable CNN–BiLSTM framework that learns patterns — not blacklists.
                     </p>
                 </motion.div>
 
@@ -89,7 +89,7 @@ const AboutSection: React.FC = () => {
                             style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.3)' }}>
                             <Network className="w-6 h-6 text-primary" />
                         </div>
-                        <h3 className="text-xl font-bold mb-3 text-white">The CNN-LSTM Advantage</h3>
+                        <h3 className="text-xl font-bold mb-3 text-white">The CNN–BiLSTM Advantage</h3>
                         <p className="text-gray-400 text-sm leading-relaxed mb-6">
                             By combining CNNs for spatial feature extraction with LSTM for sequential context modelling, our model generalizes to zero-day threats — no prior knowledge of the URL required.
                         </p>
@@ -141,11 +141,11 @@ const AboutSection: React.FC = () => {
                             <h3 className="font-bold text-white text-lg">
                                 Enhancing Adaptability to Zero-Day Phishing URL Attacks
                             </h3>
-                            <p className="text-sm text-gray-500 mt-0.5">Using an Optimized CNN–LSTM Deep Learning Model</p>
+                            <p className="text-sm text-gray-500 mt-0.5">Using an Optimized CNN–BiLSTM Deep Learning Model</p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-3 shrink-0">
-                        {['Deep Learning', 'CNN-LSTM', 'Cybersecurity', 'NLP', 'Flask API', 'React'].map(tag => (
+                        {['Deep Learning', 'CNN–BiLSTM', 'Cybersecurity', 'NLP', 'Flask API', 'React'].map(tag => (
                             <span key={tag} className="text-xs px-3 py-1.5 rounded-full font-semibold"
                                 style={{
                                     background: 'rgba(0,174,239,0.08)',

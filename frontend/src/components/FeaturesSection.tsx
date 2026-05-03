@@ -6,7 +6,7 @@ const features = [
     {
         icon: Zap,
         title: 'Zero-Day Adaptability',
-        description: 'Unlike rule-based systems, our CNN-LSTM model generalizes to previously unseen phishing patterns — no blacklists needed.',
+        description: 'Unlike rule-based systems, our CNN–BiLSTM model generalizes to previously unseen phishing patterns — no blacklists needed.',
         color: '#00AEEF',
         gradient: 'linear-gradient(135deg, rgba(0,174,239,0.12), rgba(0,174,239,0.04))',
         border: 'rgba(0,174,239,0.2)',

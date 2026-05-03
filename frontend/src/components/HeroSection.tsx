@@ -184,7 +184,7 @@ const HeroSection = () => {
                             transition={{ delay: 0.3, duration: 0.7 }}
                             className="text-lg text-gray-400 max-w-xl leading-relaxed"
                         >
-                            Real-time phishing URL detection powered by an <span className="text-primary font-semibold">optimized CNN–LSTM</span> deep learning model. 
+                            Real-time phishing URL detection powered by an <span className="text-primary font-semibold">optimized CNN–BiLSTM</span> deep learning model. 
                             Adaptable to zero-day attacks with 99.8% accuracy.
                         </motion.p>
 
@@ -313,7 +313,7 @@ const HeroSection = () => {
                                     <Activity className="w-4 h-4 text-primary" />
                                 </div>
                                 <div>
-                                    <div className="text-xs text-gray-500 mb-1">CNN-LSTM Pipeline</div>
+                                    <div className="text-xs text-gray-500 mb-1">CNN–BiLSTM Pipeline</div>
                                     <div className="text-sm font-bold text-white">Optimized · Active</div>
                                     <div className="text-xs text-gray-500 mt-1 font-mono">layers: 1D-CNN → LSTM → Dense</div>
                                 </div>

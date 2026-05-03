@@ -20,7 +20,11 @@ from tensorflow.keras.layers import Bidirectional, LSTM, Dense, Dropout
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"status": "Backend is running", "message": "PhishGuard API is active"})
 
 # =========================================
 # SETTINGS
@@ -515,13 +519,20 @@ def build_recommendation(result, reasons):
 # API ROUTE — /predict
 # =========================================
 
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
-    data = request.json
-    url  = (data or {}).get("url", "").strip()
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
 
-    if not url:
-        return jsonify({"status": "failed", "error": "No URL provided"})
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "failed", "error": "Invalid JSON or no payload"}), 400
+
+        url = data.get("url", "").strip()
+
+        if not url:
+            return jsonify({"status": "failed", "error": "No URL provided"}), 400
 
     # Normalize
     url_norm = normalize_url(url)
@@ -590,16 +601,23 @@ def predict():
         risk_level        = "Low"
         confidence_score  = 100 - final_score
 
-    recommendation = build_recommendation(prediction_result, reasons)
+        recommendation = build_recommendation(prediction_result, reasons)
 
-    return jsonify({
-        "status":            "success",
-        "url":               url,
-        "prediction_result": prediction_result,
-        "confidence_score":  confidence_score,
-        "risk_level":        risk_level,
-        "recommendation":    recommendation,
-    })
+        return jsonify({
+            "status":            "success",
+            "url":               url,
+            "prediction_result": prediction_result,
+            "confidence_score":  confidence_score,
+            "risk_level":        risk_level,
+            "recommendation":    recommendation,
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "failed",
+            "error": f"Internal server error: {str(e)}"
+        }), 500
 
 
 # =========================================

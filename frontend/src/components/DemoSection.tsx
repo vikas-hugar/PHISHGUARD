@@ -164,19 +164,38 @@ const DemoSection: React.FC = () => {
         setResult(null);
         setErrorMsg('');
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://phishguard-npyx.onrender.com';
-            const endpoint = `${backendUrl}/predict`;
+            const endpoint = 'https://phishguard-npyx.onrender.com/predict';
+
+            // Add an AbortController for a 60-second timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify({ url: trimmed }),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
+
             const data: PredictionResponse = await res.json();
-            if (!res.ok || data.status === 'failed') throw new Error(data.error || 'Prediction failed.');
+            if (!res.ok || data.status === 'failed') {
+                throw new Error(data.error || 'Prediction failed.');
+            }
+            
             setResult(data);
             setScanStatus('results');
         } catch (err: any) {
-            setErrorMsg(err.message || 'Could not connect to the PhishGuard AI backend.');
+            console.error("Scan Error:", err);
+            if (err.name === 'AbortError') {
+                setErrorMsg('Request timed out (60s). The backend is likely still booting up or experiencing high load. Please try again.');
+            } else {
+                setErrorMsg(err.message || 'Could not connect to the PhishGuard AI backend. It might be down.');
+            }
             setScanStatus('error');
         }
     };

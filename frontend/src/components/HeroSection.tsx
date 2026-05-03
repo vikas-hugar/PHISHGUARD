@@ -22,7 +22,6 @@ const ParticleCanvas: React.FC = () => {
         }> = [];
         const PARTICLE_COUNT = 80;
         const CONNECTION_DIST = 130;
-        const CONNECTION_DIST = 130;
 
         const resize = () => {
             canvas.width = canvas.offsetWidth;

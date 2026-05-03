@@ -534,72 +534,61 @@ def predict():
         if not url:
             return jsonify({"status": "failed", "error": "No URL provided"}), 400
 
-    # Normalize
-    url_norm = normalize_url(url)
-    domain   = extract_domain(url_norm)
+        # Normalize
+        url_norm = normalize_url(url)
+        domain   = extract_domain(url_norm)
 
-    # ── STEP 1: Whitelist check ──────────────────
-    # Only fast-track if the EXACT domain is in our
-    # curated trusted set (no subdomain wildcards).
-    if domain in TRUSTED_DOMAINS:
-        return jsonify({
-            "status":            "success",
-            "url":               url,
-            "prediction_result": "Safe",
-            "confidence_score":  96,
-            "risk_level":        "Low",
-            "recommendation":    "✅ This URL belongs to a verified trusted domain.",
-        })
+        # ── STEP 1: Whitelist check ──────────────────
+        if domain in TRUSTED_DOMAINS:
+            return jsonify({
+                "status":            "success",
+                "url":               url,
+                "prediction_result": "Safe",
+                "confidence_score":  96,
+                "risk_level":        "Low",
+                "recommendation":    "✅ This URL belongs to a verified trusted domain.",
+            })
 
-    # ── STEP 2: CNN-BiLSTM Deep Learning ────────
-    processed  = preprocess_url(url_norm)
-    dl_raw     = float(model.predict(processed, verbose=0)[0][0])
+        # ── STEP 2: CNN-BiLSTM Deep Learning ────────
+        processed  = preprocess_url(url_norm)
+        dl_raw     = float(model.predict(processed, verbose=0)[0][0])
 
-    # ── STEP 3: Rule-Based Heuristic Analysis ───
-    rule_score, reasons = calculate_rule_score(url_norm, domain)
+        # ── STEP 3: Rule-Based Heuristic Analysis ───
+        rule_score, reasons = calculate_rule_score(url_norm, domain)
 
-    # ── STEP 4: Hybrid Score ────────────────────
-    final_score = hybrid_score(dl_raw, rule_score)
+        # ── STEP 4: Hybrid Score ────────────────────
+        final_score = hybrid_score(dl_raw, rule_score)
 
-    # ── STEP 5: Hard overrides ──────────────────
-    # Certain single signals are so reliable that
-    # they force a minimum classification floor,
-    # regardless of what the DL model outputs.
+        # ── STEP 5: Hard overrides ──────────────────
+        in_apex, _ab, ab_has_modifier = brand_in_apex_domain(domain)
+        if in_apex and ab_has_modifier:
+            final_score = max(final_score, 78)
+        elif in_apex:
+            final_score = max(final_score, 55)
 
-    in_apex, _ab, ab_has_modifier = brand_in_apex_domain(domain)
-    if in_apex and ab_has_modifier:
-        # e.g. paypal-account-update.com → Phishing floor
-        final_score = max(final_score, 78)
-    elif in_apex:
-        # e.g. applehelp.com → Suspicious floor
-        final_score = max(final_score, 55)
+        typo, _brand = is_typosquatting(domain)
+        if typo or has_ip_address(domain):
+            final_score = max(final_score, 55)
 
-    typo, _brand = is_typosquatting(domain)
-    if typo or has_ip_address(domain):
-        # Typosquatting / raw IP → at LEAST Suspicious
-        final_score = max(final_score, 55)
+        if has_misleading_prefix(domain) or has_punycode(domain):
+            final_score = max(final_score, 62)
 
-    if has_misleading_prefix(domain) or has_punycode(domain):
-        final_score = max(final_score, 62)
+        if dl_raw > 0.80:
+            final_score = max(final_score, 82)
 
-    # DL model alone: if it's very confident (>0.80),
-    # ensure it can independently flag as Phishing.
-    if dl_raw > 0.80:
-        final_score = max(final_score, 82)
-
-    # ── STEP 6: Classification ──────────────────
-    if final_score >= 70:
-        prediction_result = "Phishing"
-        risk_level        = "High"
-        confidence_score  = final_score
-    elif final_score >= 40:
-        prediction_result = "Suspicious"
-        risk_level        = "Moderate"
-        confidence_score  = final_score
-    else:
-        prediction_result = "Safe"
-        risk_level        = "Low"
-        confidence_score  = 100 - final_score
+        # ── STEP 6: Classification ──────────────────
+        if final_score >= 70:
+            prediction_result = "Phishing"
+            risk_level        = "High"
+            confidence_score  = final_score
+        elif final_score >= 40:
+            prediction_result = "Suspicious"
+            risk_level        = "Moderate"
+            confidence_score  = final_score
+        else:
+            prediction_result = "Safe"
+            risk_level        = "Low"
+            confidence_score  = 100 - final_score
 
         recommendation = build_recommendation(prediction_result, reasons)
 

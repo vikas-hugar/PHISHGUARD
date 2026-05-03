@@ -17,7 +17,11 @@ const ParticleCanvas: React.FC = () => {
         const particles: Array<{
             x: number; y: number; vx: number; vy: number; radius: number; opacity: number;
         }> = [];
+        const ripples: Array<{
+            x: number; y: number; radius: number; maxRadius: number; opacity: number; speed: number;
+        }> = [];
         const PARTICLE_COUNT = 80;
+        const CONNECTION_DIST = 130;
         const CONNECTION_DIST = 130;
 
         const resize = () => {
@@ -31,7 +35,34 @@ const ParticleCanvas: React.FC = () => {
             const rect = canvas.getBoundingClientRect();
             mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         };
+
+        const handleClick = (e: MouseEvent) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            // Add visual ripple
+            ripples.push({
+                x: clickX, y: clickY, radius: 0, maxRadius: 150 + Math.random() * 50, opacity: 1, speed: 8 + Math.random() * 4
+            });
+
+            // Apply outward velocity to particles
+            for (const p of particles) {
+                const dx = p.x - clickX;
+                const dy = p.y - clickY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 200) {
+                    const force = (200 - dist) / 200; // 0 to 1
+                    const angle = Math.atan2(dy, dx);
+                    p.vx += Math.cos(angle) * force * 15;
+                    p.vy += Math.sin(angle) * force * 15;
+                }
+            }
+        };
+
         window.addEventListener('mousemove', handleMouse);
+        window.addEventListener('mousedown', handleClick);
 
         // Init particles
         for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -50,6 +81,18 @@ const ParticleCanvas: React.FC = () => {
 
             // Update & draw particles
             for (const p of particles) {
+                // Apply friction to velocity so they slow back down after a ripple
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+                
+                // Keep base movement if too slow
+                if (Math.abs(p.vx) < 0.2) p.vx += (Math.random() - 0.5) * 0.05;
+                if (Math.abs(p.vy) < 0.2) p.vy += (Math.random() - 0.5) * 0.05;
+
+                // Max speed cap
+                p.vx = Math.max(Math.min(p.vx, 5), -5);
+                p.vy = Math.max(Math.min(p.vy, 5), -5);
+
                 p.x += p.vx;
                 p.y += p.vy;
                 if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
@@ -59,6 +102,24 @@ const ParticleCanvas: React.FC = () => {
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(0, 174, 239, ${p.opacity})`;
                 ctx.fill();
+            }
+
+            // Draw ripples
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += r.speed;
+                r.opacity -= 0.02;
+                
+                if (r.opacity <= 0 || r.radius >= r.maxRadius) {
+                    ripples.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 255, 178, ${r.opacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
 
             // Draw connections
@@ -102,10 +163,11 @@ const ParticleCanvas: React.FC = () => {
             cancelAnimationFrame(animId);
             window.removeEventListener('resize', resize);
             window.removeEventListener('mousemove', handleMouse);
+            window.removeEventListener('mousedown', handleClick);
         };
     }, []);
 
-    return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />;
+    return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };
 
 // ─────────────────────────────────────────────────

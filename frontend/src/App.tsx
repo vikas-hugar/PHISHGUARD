@@ -12,6 +12,7 @@ import ResearchSection from './components/ResearchSection';
 import TechStackSection from './components/TechStackSection';
 import TeamSection from './components/TeamSection';
 import Footer from './components/Footer';
+import CustomCursor from './components/CustomCursor';
 
 function App() {
     return (
@@ -19,6 +20,7 @@ function App() {
             className="min-h-screen text-white font-sans overflow-x-hidden"
             style={{ background: '#060B18' }}
         >
+            <CustomCursor />
             <Navbar />
             <main>
                 {/* 1. Hero — animated particle background + headline */}

@@ -164,8 +164,8 @@ const DemoSection: React.FC = () => {
         setResult(null);
         setErrorMsg('');
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL;
-            const endpoint = backendUrl ? `${backendUrl}/predict` : '/api/predict';
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://phishguard-npyx.onrender.com';
+            const endpoint = `${backendUrl}/predict`;
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

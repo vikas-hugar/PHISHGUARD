@@ -7,6 +7,8 @@ import math
 from collections import Counter
 from urllib.parse import urlparse
 import threading
+import time
+from collections import deque
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -33,6 +35,25 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({"status": "Backend is running", "message": "PhishGuard API is active"})
+
+# =========================================
+# GLOBAL STATISTICS TRACKING
+# =========================================
+GLOBAL_STATS = {
+    "total": 0,
+    "phishing": 0,
+    "safe": 0,
+    "suspicious": 0,
+    "confSum": 0
+}
+RECENT_SCANS = deque(maxlen=7)
+
+@app.route("/stats", methods=["GET"])
+def get_stats():
+    return jsonify({
+        "stats": GLOBAL_STATS,
+        "history": list(RECENT_SCANS)
+    })
 
 # =========================================
 # SETTINGS
@@ -660,6 +681,24 @@ def predict():
             confidence_score  = 100 - final_score
 
         recommendation = build_recommendation(prediction_result, reasons)
+
+        # ── Update Global Stats ────────────────────
+        GLOBAL_STATS["total"] += 1
+        GLOBAL_STATS["confSum"] += confidence_score
+        
+        if prediction_result == "Phishing":
+            GLOBAL_STATS["phishing"] += 1
+        elif prediction_result == "Safe":
+            GLOBAL_STATS["safe"] += 1
+        else:
+            GLOBAL_STATS["suspicious"] += 1
+
+        RECENT_SCANS.appendleft({
+            "url": url,
+            "result": prediction_result,
+            "confidence": confidence_score,
+            "timestamp": int(time.time() * 1000)
+        })
 
         return jsonify({
             "status":            "success",

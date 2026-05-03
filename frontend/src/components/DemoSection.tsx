@@ -200,19 +200,6 @@ const DemoSection: React.FC = () => {
             setResult(data);
             setScanStatus('results');
 
-            // ── Save to Local Storage for Dashboard ──
-            const newScan = {
-                url: trimmed,
-                result: data.prediction_result,
-                confidence: data.confidence_score,
-                time: 'Just now',
-                timestamp: Date.now()
-            };
-            const existingScans = JSON.parse(localStorage.getItem('phishguard_history') || '[]');
-            const updatedScans = [newScan, ...existingScans].slice(0, 50);
-            localStorage.setItem('phishguard_history', JSON.stringify(updatedScans));
-            window.dispatchEvent(new Event('scan-history-update'));
-
         } catch (err: any) {
             console.error("Scan Error:", err);
             if (err.name === 'AbortError') {

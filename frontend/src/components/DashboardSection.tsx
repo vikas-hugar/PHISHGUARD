@@ -73,42 +73,49 @@ const DashboardSection: React.FC = () => {
     const [liveStats, setLiveStats] = useState({ total: 0, phishing: 0, safe: 0, avgConf: 0 });
 
     useEffect(() => {
-        const updateFromHistory = () => {
-            const historyStr = localStorage.getItem('phishguard_history');
-            if (historyStr) {
-                try {
-                    const history = JSON.parse(historyStr);
-                    if (history.length > 0) {
-                        setRecentScans([...history, ...INITIAL_SCANS].slice(0, 7));
-                        let phishCount = 0, safeCount = 0, suspCount = 0, confSum = 0;
-                        history.forEach((h: any) => {
-                            if (h.result === 'Phishing') phishCount++;
-                            else if (h.result === 'Safe') safeCount++;
-                            else suspCount++;
-                            confSum += h.confidence;
-                        });
-                        const total = history.length;
-                        setPieData([
-                            { name: 'Phishing', value: Math.round((phishCount/total)*100), color: '#FF3B3B' },
-                            { name: 'Safe', value: Math.round((safeCount/total)*100), color: '#00FFB2' },
-                            { name: 'Suspicious', value: Math.round((suspCount/total)*100), color: '#FFB347' },
-                        ]);
-                        setLiveStats({
-                            total: total,
-                            phishing: phishCount,
-                            safe: safeCount,
-                            avgConf: Math.round(confSum / total)
-                        });
-                    }
-                } catch (e) {
-                    console.error("Failed to parse history", e);
+        const fetchGlobalStats = async () => {
+            try {
+                const endpoint = import.meta.env.VITE_API_URL 
+                    ? `${import.meta.env.VITE_API_URL}/stats` 
+                    : 'https://phishguard-npyx.onrender.com/stats';
+                
+                const res = await fetch(endpoint);
+                if (!res.ok) throw new Error("Failed to fetch global stats");
+                
+                const data = await res.json();
+                
+                // Update history
+                if (data.history && data.history.length > 0) {
+                    const mergedHistory = [...data.history, ...INITIAL_SCANS].slice(0, 7);
+                    setRecentScans(mergedHistory);
                 }
+
+                // Update global counters
+                if (data.stats && data.stats.total > 0) {
+                    const st = data.stats;
+                    setLiveStats({
+                        total: st.total,
+                        phishing: st.phishing,
+                        safe: st.safe,
+                        avgConf: Math.round(st.confSum / st.total)
+                    });
+                    
+                    setPieData([
+                        { name: 'Phishing', value: Math.round((st.phishing/st.total)*100), color: '#FF3B3B' },
+                        { name: 'Safe', value: Math.round((st.safe/st.total)*100), color: '#00FFB2' },
+                        { name: 'Suspicious', value: Math.round((st.suspicious/st.total)*100), color: '#FFB347' },
+                    ]);
+                }
+            } catch (err) {
+                console.error("Dashboard polling error:", err);
             }
         };
 
-        updateFromHistory();
-        window.addEventListener('scan-history-update', updateFromHistory);
-        return () => window.removeEventListener('scan-history-update', updateFromHistory);
+        // Fetch immediately, then poll every 3 seconds
+        fetchGlobalStats();
+        const intervalId = setInterval(fetchGlobalStats, 3000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     const resultColor = (r: string) => r === 'Phishing' ? '#FF3B3B' : r === 'Suspicious' ? '#FFB347' : '#00FFB2';

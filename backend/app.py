@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pickle
+import os
 import re
 import math
 from collections import Counter
@@ -164,10 +165,11 @@ model.add(Dense(1, activation="sigmoid"))
 model.build(input_shape=(None, MAX_LEN))
 
 # Load trained weights
-model.load_weights("phishing_weights.weights.h5")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model.load_weights(os.path.join(BASE_DIR, "phishing_weights.weights.h5"))
 
 # Load tokenizer
-with open("tokenizer.pkl", "rb") as handle:
+with open(os.path.join(BASE_DIR, "tokenizer.pkl"), "rb") as handle:
     tokenizer = pickle.load(handle)
 
 print("[PhishGuard] CNN-BiLSTM model loaded successfully.")

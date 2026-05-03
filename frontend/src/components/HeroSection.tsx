@@ -185,7 +185,7 @@ const HeroSection = () => {
                             className="text-lg text-gray-400 max-w-xl leading-relaxed"
                         >
                             Real-time phishing URL detection powered by an <span className="text-primary font-semibold">optimized CNN–BiLSTM</span> deep learning model. 
-                            Adaptable to zero-day attacks with 97.2% accuracy.
+                            Adaptable to zero-day attacks with 99.8% accuracy.
                         </motion.p>
 
                         {/* CTA buttons */}
@@ -214,7 +214,7 @@ const HeroSection = () => {
                             style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
                         >
                             {[
-                                { value: '97.2%', label: 'Detection Accuracy' },
+                                { value: '99.8%', label: 'Detection Accuracy' },
                                 { value: '<1s', label: 'Avg Response Time' },
                                 { value: '235K+', label: 'URLs Trained On' },
                             ].map((s, i) => (
@@ -353,7 +353,7 @@ const HeroSection = () => {
                                     color: '#00AEEF',
                                 }}
                             >
-                                97.2% Accuracy
+                                99.8% Accuracy
                             </motion.div>
 
                             <motion.div

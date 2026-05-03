@@ -21,10 +21,10 @@ const INITIAL_SCANS = [
 ];
 
 const metrics = [
-    { label: 'Accuracy', value: '97.2%', color: '#00FFB2', sub: 'Overall detection rate' },
-    { label: 'Precision', value: '96.8%', color: '#00AEEF', sub: 'True positives / total predicted' },
-    { label: 'Recall', value: '97.5%', color: '#7C3AED', sub: 'True positives / actual positives' },
-    { label: 'F1-Score', value: '97.1%', color: '#FFB347', sub: 'Harmonic mean of P & R' },
+    { label: 'Accuracy', value: '99.84%', color: '#00FFB2', sub: 'Overall detection rate' },
+    { label: 'Precision', value: '99.81%', color: '#00AEEF', sub: 'True positives / total predicted' },
+    { label: 'Recall', value: '99.86%', color: '#7C3AED', sub: 'True positives / actual positives' },
+    { label: 'F1-Score', value: '99.83%', color: '#FFB347', sub: 'Harmonic mean of P & R' },
 ];
 
 // ── Animated counter ──

@@ -83,7 +83,7 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 const DashboardSection: React.FC = () => {
     const [pieData, setPieData] = useState(INITIAL_PIE_DATA);
     const [recentScans, setRecentScans] = useState(INITIAL_SCANS);
-    const [liveStats, setLiveStats] = useState({ total: 0, phishing: 0, safe: 0, avgConf: 0 });
+    const [liveStats, setLiveStats] = useState({ total: 0, phishing: 0, safe: 0, suspicious: 0, avgConf: 0 });
 
     useEffect(() => {
         const fetchGlobalStats = async () => {
@@ -110,6 +110,7 @@ const DashboardSection: React.FC = () => {
                         total: st.total,
                         phishing: st.phishing,
                         safe: st.safe,
+                        suspicious: st.suspicious,
                         avgConf: Math.round(st.confSum / st.total)
                     });
                     
@@ -167,12 +168,13 @@ const DashboardSection: React.FC = () => {
                 </motion.div>
 
                 {/* ── Row 1: Stat counters ── */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                     {[
                         { icon: Activity, label: 'URLs Analyzed', end: liveStats.total, suffix: '', color: '#00AEEF' },
                         { icon: AlertTriangle, label: 'Phishing Detected', end: liveStats.phishing, suffix: '', color: '#FF3B3B' },
+                        { icon: ShieldAlert, label: 'Suspicious URLs', end: liveStats.suspicious, suffix: '', color: '#FFB347' },
                         { icon: ShieldCheck, label: 'Safe URLs', end: liveStats.safe, suffix: '', color: '#00FFB2' },
-                        { icon: BarChart2, label: 'Avg. Confidence', end: liveStats.avgConf, suffix: '%', color: '#FFB347' },
+                        { icon: BarChart2, label: 'Avg. Confidence', end: liveStats.avgConf, suffix: '%', color: '#9d4edd' },
                     ].map((stat, i) => {
                         const Icon = stat.icon;
                         return (

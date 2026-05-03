@@ -1,6 +1,7 @@
 node_modules/
 __pycache__/
 *.pkl
+!backend/tokenizer.pkl
 *.pyc
 .env
 venv/

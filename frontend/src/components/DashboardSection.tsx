@@ -30,27 +30,40 @@ const metrics = [
 // ── Animated counter ──
 const AnimatedCounter: React.FC<{ end: number; suffix?: string; duration?: number }> = ({ end, suffix = '', duration = 1.5 }) => {
     const [count, setCount] = useState(0);
-    const ref = useRef<HTMLSpanElement>(null);
-    const started = useRef(false);
+    const countRef = useRef(0);
 
     useEffect(() => {
-        const observer = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && !started.current) {
-                started.current = true;
-                const stepTime = (duration * 1000) / end;
-                let current = 0;
-                const timer = setInterval(() => {
-                    current += Math.ceil(end / (duration * 30));
-                    if (current >= end) { setCount(end); clearInterval(timer); }
-                    else setCount(current);
-                }, stepTime);
+        let startTime: number;
+        let animationFrame: number;
+        const startValue = countRef.current;
+        
+        if (startValue === end) {
+            setCount(end);
+            return;
+        }
+        
+        const animate = (time: number) => {
+            if (!startTime) startTime = time;
+            const progress = Math.min((time - startTime) / (duration * 1000), 1);
+            const easeProgress = 1 - (1 - progress) * (1 - progress);
+            
+            const current = Math.round(startValue + (end - startValue) * easeProgress);
+            setCount(current);
+            countRef.current = current;
+            
+            if (progress < 1) {
+                animationFrame = requestAnimationFrame(animate);
+            } else {
+                setCount(end);
+                countRef.current = end;
             }
-        });
-        if (ref.current) observer.observe(ref.current);
-        return () => observer.disconnect();
+        };
+        
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
     }, [end, duration]);
 
-    return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
+    return <span>{count.toLocaleString()}{suffix}</span>;
 };
 
 // ── Custom donut chart label ──

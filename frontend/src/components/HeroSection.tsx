@@ -233,13 +233,16 @@ const HeroSection = () => {
                         transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
                         className="relative w-full flex items-center justify-center"
                     >
-                        <div className="relative w-full max-w-lg rounded-2xl p-6 overflow-hidden"
-                            style={{
-                                background: 'rgba(10,15,44,0.75)',
-                                border: '1px solid rgba(0,174,239,0.25)',
-                                backdropFilter: 'blur(24px)',
-                                boxShadow: '0 0 60px rgba(0,174,239,0.12), 0 30px 60px rgba(0,0,0,0.5)',
-                            }}>
+                        {/* Wrapper to allow badges to float outside the hidden overflow */}
+                        <div className="relative w-full max-w-lg">
+                            
+                            <div className="relative w-full rounded-2xl p-6 overflow-hidden"
+                                style={{
+                                    background: 'rgba(10,15,44,0.75)',
+                                    border: '1px solid rgba(0,174,239,0.25)',
+                                    backdropFilter: 'blur(24px)',
+                                    boxShadow: '0 0 60px rgba(0,174,239,0.12), 0 30px 60px rgba(0,0,0,0.5)',
+                                }}>
 
                             {/* Top accent line */}
                             <div className="absolute top-0 left-0 w-full h-px"
@@ -335,11 +338,13 @@ const HeroSection = () => {
                                 </div>
                             </div>
 
-                            {/* Floating badges */}
+                            </div>
+
+                            {/* Floating badges (now outside overflow-hidden) */}
                             <motion.div
                                 animate={{ y: [0, -8, 0] }}
                                 transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-                                className="absolute -right-4 -top-4 px-3 py-2 rounded-xl text-xs font-bold"
+                                className="absolute -right-4 -top-4 px-3 py-2 rounded-xl text-xs font-bold z-20"
                                 style={{
                                     background: 'rgba(10,15,44,0.9)',
                                     border: '1px solid rgba(0,174,239,0.35)',
@@ -354,7 +359,7 @@ const HeroSection = () => {
                             <motion.div
                                 animate={{ y: [0, 8, 0] }}
                                 transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }}
-                                className="absolute -right-8 bottom-12 px-3 py-2 rounded-xl text-xs font-bold"
+                                className="absolute -right-8 bottom-12 px-3 py-2 rounded-xl text-xs font-bold z-20"
                                 style={{
                                     background: 'rgba(10,15,44,0.9)',
                                     border: '1px solid rgba(0,255,178,0.3)',

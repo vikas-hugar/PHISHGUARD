@@ -5,16 +5,16 @@ import { BarChart2, Database, Settings } from 'lucide-react';
 
 // ── Training data ──
 const trainingData = [
-    { epoch: 1, accuracy: 62.1, val_accuracy: 58.8, loss: 1.35 },
-    { epoch: 2, accuracy: 73.5, val_accuracy: 70.2, loss: 0.92 },
-    { epoch: 3, accuracy: 81.4, val_accuracy: 78.6, loss: 0.61 },
-    { epoch: 4, accuracy: 87.3, val_accuracy: 85.1, loss: 0.42 },
-    { epoch: 5, accuracy: 91.0, val_accuracy: 89.4, loss: 0.29 },
-    { epoch: 6, accuracy: 93.6, val_accuracy: 92.1, loss: 0.21 },
-    { epoch: 7, accuracy: 95.2, val_accuracy: 93.8, loss: 0.16 },
-    { epoch: 8, accuracy: 96.1, val_accuracy: 95.0, loss: 0.12 },
-    { epoch: 9, accuracy: 96.8, val_accuracy: 95.9, loss: 0.09 },
-    { epoch: 10, accuracy: 97.2, val_accuracy: 96.4, loss: 0.07 },
+    { epoch: 1, accuracy: 99.23, val_accuracy: 99.80, loss: 0.0260 },
+    { epoch: 2, accuracy: 99.79, val_accuracy: 99.80, loss: 0.0131 },
+    { epoch: 3, accuracy: 99.70, val_accuracy: 99.82, loss: 0.0179 },
+    { epoch: 4, accuracy: 99.80, val_accuracy: 99.80, loss: 0.0123 },
+    { epoch: 5, accuracy: 99.80, val_accuracy: 99.82, loss: 0.0123 },
+    { epoch: 6, accuracy: 99.81, val_accuracy: 99.81, loss: 0.0116 },
+    { epoch: 7, accuracy: 99.81, val_accuracy: 99.82, loss: 0.0114 },
+    { epoch: 8, accuracy: 99.82, val_accuracy: 99.80, loss: 0.0112 },
+    { epoch: 9, accuracy: 99.82, val_accuracy: 99.84, loss: 0.0109 },
+    { epoch: 10, accuracy: 99.84, val_accuracy: 99.83, loss: 0.0100 },
 ];
 
 // ── Class distribution pie ──
@@ -117,10 +117,10 @@ const DatasetSection: React.FC = () => {
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { value: '97.2%', label: 'Accuracy', color: '#00FFB2' },
-                                    { value: '96.8%', label: 'Precision', color: '#00AEEF' },
-                                    { value: '97.5%', label: 'Recall', color: '#7C3AED' },
-                                    { value: '97.1%', label: 'F1-Score', color: '#FFB347' },
+                                    { value: '99.84%', label: 'Accuracy', color: '#00FFB2' },
+                                    { value: '99.81%', label: 'Precision', color: '#00AEEF' },
+                                    { value: '99.86%', label: 'Recall', color: '#7C3AED' },
+                                    { value: '99.83%', label: 'F1-Score', color: '#FFB347' },
                                 ].map((m, i) => (
                                     <motion.div
                                         key={i}
@@ -172,7 +172,7 @@ const DatasetSection: React.FC = () => {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                     <XAxis dataKey="epoch" stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} />
-                                    <YAxis stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} domain={[55, 102]} />
+                                    <YAxis stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} domain={[99, 100]} />
                                     <Tooltip
                                         contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(0,174,239,0.25)', borderRadius: 10, fontSize: 12 }}
                                         labelStyle={{ color: '#9CA3AF' }}

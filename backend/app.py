@@ -10,14 +10,22 @@ from urllib.parse import urlparse
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-import tensorflow as tf
-tf.config.threading.set_inter_op_parallelism_threads(1)
-tf.config.threading.set_intra_op_parallelism_threads(1)
+# =========================================
+# PERFORMANCE TOGGLE
+# =========================================
+# Set to False to disable Deep Learning and rely purely on Heuristics.
+# This prevents 60s+ timeouts on Render's free tier CPU limit.
+ENABLE_DEEP_LEARNING = False
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D
-from tensorflow.keras.layers import Bidirectional, LSTM, Dense, Dropout
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+if ENABLE_DEEP_LEARNING:
+    import tensorflow as tf
+    tf.config.threading.set_inter_op_parallelism_threads(1)
+    tf.config.threading.set_intra_op_parallelism_threads(1)
+
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D
+    from tensorflow.keras.layers import Bidirectional, LSTM, Dense, Dropout
+    from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -165,25 +173,28 @@ LEET_MAP = {
 # MODEL BUILD (EXACT SAME AS TRAINING)
 # =========================================
 
-model = Sequential()
-model.add(Embedding(input_dim=MAX_WORDS, output_dim=128))
-model.add(Conv1D(filters=128, kernel_size=5, activation="relu"))
-model.add(MaxPooling1D(pool_size=2))
-model.add(Bidirectional(LSTM(64)))
-model.add(Dropout(0.5))
-model.add(Dense(64, activation="relu"))
-model.add(Dense(1, activation="sigmoid"))
-model.build(input_shape=(None, MAX_LEN))
+if ENABLE_DEEP_LEARNING:
+    model = Sequential()
+    model.add(Embedding(input_dim=MAX_WORDS, output_dim=128))
+    model.add(Conv1D(filters=128, kernel_size=5, activation="relu"))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Bidirectional(LSTM(64)))
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation="relu"))
+    model.add(Dense(1, activation="sigmoid"))
+    model.build(input_shape=(None, MAX_LEN))
 
-# Load trained weights
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model.load_weights(os.path.join(BASE_DIR, "phishing_weights.weights.h5"))
+    # Load trained weights
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    model.load_weights(os.path.join(BASE_DIR, "phishing_weights.weights.h5"))
 
-# Load tokenizer
-with open(os.path.join(BASE_DIR, "tokenizer.pkl"), "rb") as handle:
-    tokenizer = pickle.load(handle)
+    # Load tokenizer
+    with open(os.path.join(BASE_DIR, "tokenizer.pkl"), "rb") as handle:
+        tokenizer = pickle.load(handle)
 
-print("[PhishGuard] CNN-BiLSTM model loaded successfully.")
+    print("[PhishGuard] CNN-BiLSTM model loaded successfully.")
+else:
+    print("[PhishGuard] FAST MODE ENABLED: Deep Learning disabled. Running purely on Heuristics.")
 
 # =========================================
 # URL PREPROCESSING
@@ -550,8 +561,12 @@ def predict():
             })
 
         # ── STEP 2: CNN-BiLSTM Deep Learning ────────
-        processed  = preprocess_url(url_norm)
-        dl_raw     = float(model.predict(processed, verbose=0)[0][0])
+        if ENABLE_DEEP_LEARNING:
+            processed  = preprocess_url(url_norm)
+            dl_raw     = float(model.predict(processed, verbose=0)[0][0])
+        else:
+            # Bypass slow DL calculation, rely entirely on rules later
+            dl_raw = 0.5 
 
         # ── STEP 3: Rule-Based Heuristic Analysis ───
         rule_score, reasons = calculate_rule_score(url_norm, domain)
@@ -612,10 +627,11 @@ def predict():
 # =========================================
 # WARMUP TO PREVENT COLD-START TIMEOUTS
 # =========================================
-print("[PhishGuard] Warming up deep learning model...")
-dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
-model.predict(dummy_seq, verbose=0)
-print("[PhishGuard] Model warmed up and ready to serve requests!")
+if ENABLE_DEEP_LEARNING:
+    print("[PhishGuard] Warming up deep learning model...")
+    dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
+    model.predict(dummy_seq, verbose=0)
+    print("[PhishGuard] Model warmed up and ready to serve requests!")
 
 # =========================================
 # RUN FLASK APP

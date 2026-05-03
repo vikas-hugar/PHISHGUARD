@@ -52,7 +52,7 @@ const TeamSection: React.FC = () => {
                             <User2 className="w-6 h-6" />
                         </div>
                         <p className="text-xs text-gray-600 uppercase tracking-widest font-bold mb-2">Developed By</p>
-                        <h3 className="text-2xl font-bold text-white mb-1">Vikas Hugar</h3>
+                        <h3 className="text-2xl font-bold text-white mb-1">[Your Name]</h3>
                         <p className="text-gray-500 text-sm mb-6">B.E. Computer Science & Engineering</p>
                         <div className="space-y-3">
                             {[

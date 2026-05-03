@@ -4,13 +4,13 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { Activity, ShieldAlert, ShieldCheck, Zap, Clock, BarChart2, TrendingUp, AlertTriangle } from 'lucide-react';
 
 // ── Mock data for demo dashboard ──
-const pieData = [
+const INITIAL_PIE_DATA = [
     { name: 'Phishing', value: 42, color: '#FF3B3B' },
     { name: 'Safe', value: 51, color: '#00FFB2' },
     { name: 'Suspicious', value: 7, color: '#FFB347' },
 ];
 
-const recentScans = [
+const INITIAL_SCANS = [
     { url: 'paypal-account-update.com/login', result: 'Phishing', confidence: 97, time: '2min ago' },
     { url: 'github.com/microsoft/vscode', result: 'Safe', confidence: 99, time: '5min ago' },
     { url: 'apple-id-verify-secure.net', result: 'Phishing', confidence: 94, time: '8min ago' },
@@ -68,6 +68,49 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 
 // ─────────────────────────────────────────────────
 const DashboardSection: React.FC = () => {
+    const [pieData, setPieData] = useState(INITIAL_PIE_DATA);
+    const [recentScans, setRecentScans] = useState(INITIAL_SCANS);
+    const [liveStats, setLiveStats] = useState({ total: 24817, phishing: 10423, safe: 12650, avgConf: 94 });
+
+    useEffect(() => {
+        const updateFromHistory = () => {
+            const historyStr = localStorage.getItem('phishguard_history');
+            if (historyStr) {
+                try {
+                    const history = JSON.parse(historyStr);
+                    if (history.length > 0) {
+                        setRecentScans([...history, ...INITIAL_SCANS].slice(0, 7));
+                        let phishCount = 0, safeCount = 0, suspCount = 0, confSum = 0;
+                        history.forEach((h: any) => {
+                            if (h.result === 'Phishing') phishCount++;
+                            else if (h.result === 'Safe') safeCount++;
+                            else suspCount++;
+                            confSum += h.confidence;
+                        });
+                        const total = history.length;
+                        setPieData([
+                            { name: 'Phishing', value: Math.round((phishCount/total)*100), color: '#FF3B3B' },
+                            { name: 'Safe', value: Math.round((safeCount/total)*100), color: '#00FFB2' },
+                            { name: 'Suspicious', value: Math.round((suspCount/total)*100), color: '#FFB347' },
+                        ]);
+                        setLiveStats({
+                            total: 24817 + total,
+                            phishing: 10423 + phishCount,
+                            safe: 12650 + safeCount,
+                            avgConf: Math.round(confSum / total)
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to parse history", e);
+                }
+            }
+        };
+
+        updateFromHistory();
+        window.addEventListener('scan-history-update', updateFromHistory);
+        return () => window.removeEventListener('scan-history-update', updateFromHistory);
+    }, []);
+
     const resultColor = (r: string) => r === 'Phishing' ? '#FF3B3B' : r === 'Suspicious' ? '#FFB347' : '#00FFB2';
     const resultBadge = (r: string) => r === 'Phishing' ? 'badge-phishing' : r === 'Suspicious' ? 'badge-suspicious' : 'badge-safe';
     const resultIcon = (r: string) => r === 'Phishing'
@@ -106,10 +149,10 @@ const DashboardSection: React.FC = () => {
                 {/* ── Row 1: Stat counters ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     {[
-                        { icon: Activity, label: 'URLs Analyzed', end: 24817, suffix: '', color: '#00AEEF' },
-                        { icon: AlertTriangle, label: 'Phishing Detected', end: 10423, suffix: '', color: '#FF3B3B' },
-                        { icon: ShieldCheck, label: 'Safe URLs', end: 12650, suffix: '', color: '#00FFB2' },
-                        { icon: BarChart2, label: 'Avg. Confidence', end: 94, suffix: '%', color: '#FFB347' },
+                        { icon: Activity, label: 'URLs Analyzed', end: liveStats.total, suffix: '', color: '#00AEEF' },
+                        { icon: AlertTriangle, label: 'Phishing Detected', end: liveStats.phishing, suffix: '', color: '#FF3B3B' },
+                        { icon: ShieldCheck, label: 'Safe URLs', end: liveStats.safe, suffix: '', color: '#00FFB2' },
+                        { icon: BarChart2, label: 'Avg. Confidence', end: liveStats.avgConf, suffix: '%', color: '#FFB347' },
                     ].map((stat, i) => {
                         const Icon = stat.icon;
                         return (

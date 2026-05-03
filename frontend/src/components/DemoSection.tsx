@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Loader2, ShieldCheck, ShieldAlert, AlertTriangle,
-    Fingerprint, Network, Shield, RefreshCw, Globe, Hash, Clock, Link2
+    Fingerprint, Network, Shield, RefreshCw, Globe, Hash, Clock, Link2, Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 // ── API response type ──
 interface PredictionResponse {
@@ -160,15 +161,24 @@ const DemoSection: React.FC = () => {
         e.preventDefault();
         const trimmed = url.trim();
         if (!trimmed) return;
+        
+        // Strict input validation
+        if (!/^https?:\/\//i.test(trimmed)) {
+            setErrorMsg('Invalid format. URL must start with http:// or https://');
+            setScanStatus('error');
+            return;
+        }
+
         setScanStatus('scanning');
         setResult(null);
         setErrorMsg('');
         try {
-            const endpoint = 'https://phishguard-npyx.onrender.com/predict';
+            const endpoint = import.meta.env.VITE_API_URL 
+                ? `${import.meta.env.VITE_API_URL}/predict` 
+                : 'https://phishguard-npyx.onrender.com/predict';
 
-            // Add an AbortController for a 60-second timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -189,18 +199,90 @@ const DemoSection: React.FC = () => {
             
             setResult(data);
             setScanStatus('results');
+
+            // ── Save to Local Storage for Dashboard ──
+            const newScan = {
+                url: trimmed,
+                result: data.prediction_result,
+                confidence: data.confidence_score,
+                time: 'Just now',
+                timestamp: Date.now()
+            };
+            const existingScans = JSON.parse(localStorage.getItem('phishguard_history') || '[]');
+            const updatedScans = [newScan, ...existingScans].slice(0, 50);
+            localStorage.setItem('phishguard_history', JSON.stringify(updatedScans));
+            window.dispatchEvent(new Event('scan-history-update'));
+
         } catch (err: any) {
             console.error("Scan Error:", err);
             if (err.name === 'AbortError') {
-                setErrorMsg('Request timed out (60s). The backend is likely still booting up or experiencing high load. Please try again.');
+                setErrorMsg('Server is slow, try again.');
             } else {
-                setErrorMsg(err.message || 'Could not connect to the PhishGuard AI backend. It might be down.');
+                setErrorMsg('Backend unavailable.');
             }
             setScanStatus('error');
         }
     };
 
     const handleReset = () => { setScanStatus('idle'); setResult(null); setUrl(''); setErrorMsg(''); };
+
+    const downloadReport = () => {
+        if (!result) return;
+        const doc = new jsPDF();
+        
+        doc.setFillColor(6, 11, 24);
+        doc.rect(0, 0, 210, 297, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text("PhishGuard AI - Analysis Report", 20, 30);
+        
+        doc.setDrawColor(0, 174, 239);
+        doc.line(20, 35, 190, 35);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(200, 200, 200);
+        
+        const safeColor = [0, 255, 178];
+        const phishColor = [255, 59, 59];
+        const suspColor = [255, 179, 71];
+        
+        let statusColor = safeColor;
+        if (result.prediction_result === 'Phishing') statusColor = phishColor;
+        else if (result.prediction_result === 'Suspicious') statusColor = suspColor;
+        
+        doc.text(`Scanned URL:`, 20, 50);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${result.url}`, 60, 50);
+        
+        doc.setTextColor(200, 200, 200);
+        doc.text(`Prediction:`, 20, 60);
+        doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        doc.text(`${result.prediction_result}`, 60, 60);
+        
+        doc.setTextColor(200, 200, 200);
+        doc.text(`Confidence:`, 20, 70);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${result.confidence_score}%`, 60, 70);
+        
+        doc.setTextColor(200, 200, 200);
+        doc.text(`Risk Level:`, 20, 80);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${result.risk_level}`, 60, 80);
+        
+        doc.setTextColor(200, 200, 200);
+        doc.text(`Timestamp:`, 20, 90);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${new Date().toLocaleString()}`, 60, 90);
+        
+        doc.setTextColor(0, 174, 239);
+        doc.text(`Recommendation:`, 20, 110);
+        doc.setTextColor(255, 255, 255);
+        const splitText = doc.splitTextToSize(result.recommendation, 170);
+        doc.text(splitText, 20, 120);
+        
+        doc.save(`PhishGuard_Report_${Date.now()}.pdf`);
+    };
 
     const colors = getColors(result?.prediction_result);
     const features = result ? getFeatureBreakdown(result) : [];
@@ -370,7 +452,7 @@ const DemoSection: React.FC = () => {
                                     <div className="flex-1 text-center md:text-left">
                                         <h3 className="font-bold text-lg mb-1 text-dangerous">Backend Connection Error</h3>
                                         <p className="text-sm text-gray-400">{errorMsg}</p>
-                                        <p className="text-xs text-gray-600 mt-2 font-mono">Ensure Flask backend is running: python app.py (port 5000)</p>
+                                        <p className="text-xs text-gray-600 mt-2 font-mono">Check URL validity or ensure backend is online.</p>
                                     </div>
                                     <button onClick={handleReset}
                                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm border border-white/10 hover:border-white/20 text-white transition-all">
@@ -467,12 +549,17 @@ const DemoSection: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Scan again button */}
-                                <div className="flex justify-center pt-2">
+                                {/* Scan again and Report buttons */}
+                                <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
                                     <button onClick={handleReset}
-                                        className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:bg-primary/10"
-                                        style={{ border: '1px solid rgba(0,174,239,0.25)' }}>
+                                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:bg-white/5"
+                                        style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                                         <RefreshCw className="w-4 h-4" /> Scan Another URL
+                                    </button>
+                                    <button onClick={downloadReport}
+                                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:bg-primary/20"
+                                        style={{ background: 'rgba(0,174,239,0.1)', border: '1px solid rgba(0,174,239,0.3)', boxShadow: '0 0 15px rgba(0,174,239,0.15)' }}>
+                                        <Download className="w-4 h-4 text-primary" /> Download PDF Report
                                     </button>
                                 </div>
                             </motion.div>

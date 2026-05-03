@@ -52,11 +52,11 @@ const TeamSection: React.FC = () => {
                             <User2 className="w-6 h-6" />
                         </div>
                         <p className="text-xs text-gray-600 uppercase tracking-widest font-bold mb-2">Developed By</p>
-                        <h3 className="text-2xl font-bold text-white mb-1">[Student Name]</h3>
+                        <h3 className="text-2xl font-bold text-white mb-1">Vikas Hugar</h3>
                         <p className="text-gray-500 text-sm mb-6">B.E. Computer Science & Engineering</p>
                         <div className="space-y-3">
                             {[
-                                { label: 'USN / Roll No', value: '[Student ID]' },
+                                { label: 'USN / Roll No', value: '[Your USN]' },
                                 { label: 'Role', value: 'Full Stack AI Developer' },
                                 { label: 'Specialization', value: 'Deep Learning & Cybersecurity' },
                             ].map((r, i) => (
@@ -89,11 +89,11 @@ const TeamSection: React.FC = () => {
                             <BookOpen className="w-6 h-6" />
                         </div>
                         <p className="text-xs text-gray-600 uppercase tracking-widest font-bold mb-2">Under the Guidance Of</p>
-                        <h3 className="text-2xl font-bold text-white mb-1">[Guide Name]</h3>
-                        <p className="text-gray-500 text-sm mb-6">[Guide Designation], Dept of CSE</p>
+                        <h3 className="text-2xl font-bold text-white mb-1">[Your Guide Name]</h3>
+                        <p className="text-gray-500 text-sm mb-6">Professor, Dept of CSE</p>
                         <div className="space-y-3">
                             {[
-                                { label: 'Institution', value: '[College Name]' },
+                                { label: 'Institution', value: '[Your College]' },
                                 { label: 'Academic Year', value: '2025 – 2026' },
                                 { label: 'Degree', value: 'B.E. / B.Tech CSE' },
                             ].map((r, i) => (

@@ -21,10 +21,10 @@ const INITIAL_SCANS = [
 ];
 
 const metrics = [
-    { label: 'Accuracy', value: '99.8%', color: '#00FFB2', sub: 'Overall detection rate' },
-    { label: 'Precision', value: '99.5%', color: '#00AEEF', sub: 'True positives / total predicted' },
-    { label: 'Recall', value: '99.7%', color: '#7C3AED', sub: 'True positives / actual positives' },
-    { label: 'F1-Score', value: '99.6%', color: '#FFB347', sub: 'Harmonic mean of P & R' },
+    { label: 'Accuracy', value: '97.2%', color: '#00FFB2', sub: 'Overall detection rate' },
+    { label: 'Precision', value: '96.8%', color: '#00AEEF', sub: 'True positives / total predicted' },
+    { label: 'Recall', value: '97.5%', color: '#7C3AED', sub: 'True positives / actual positives' },
+    { label: 'F1-Score', value: '97.1%', color: '#FFB347', sub: 'Harmonic mean of P & R' },
 ];
 
 // ── Animated counter ──
@@ -70,7 +70,7 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 const DashboardSection: React.FC = () => {
     const [pieData, setPieData] = useState(INITIAL_PIE_DATA);
     const [recentScans, setRecentScans] = useState(INITIAL_SCANS);
-    const [liveStats, setLiveStats] = useState({ total: 24817, phishing: 10423, safe: 12650, avgConf: 94 });
+    const [liveStats, setLiveStats] = useState({ total: 0, phishing: 0, safe: 0, avgConf: 0 });
 
     useEffect(() => {
         const updateFromHistory = () => {
@@ -94,9 +94,9 @@ const DashboardSection: React.FC = () => {
                             { name: 'Suspicious', value: Math.round((suspCount/total)*100), color: '#FFB347' },
                         ]);
                         setLiveStats({
-                            total: 24817 + total,
-                            phishing: 10423 + phishCount,
-                            safe: 12650 + safeCount,
+                            total: total,
+                            phishing: phishCount,
+                            safe: safeCount,
                             avgConf: Math.round(confSum / total)
                         });
                     }

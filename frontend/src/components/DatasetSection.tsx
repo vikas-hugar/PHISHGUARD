@@ -5,16 +5,16 @@ import { BarChart2, Database, Settings } from 'lucide-react';
 
 // ── Training data ──
 const trainingData = [
-    { epoch: 1, accuracy: 65.4, val_accuracy: 62.1, loss: 1.2 },
-    { epoch: 2, accuracy: 78.2, val_accuracy: 75.8, loss: 0.8 },
-    { epoch: 3, accuracy: 85.6, val_accuracy: 83.2, loss: 0.5 },
-    { epoch: 4, accuracy: 91.2, val_accuracy: 89.5, loss: 0.3 },
-    { epoch: 5, accuracy: 94.5, val_accuracy: 93.1, loss: 0.2 },
-    { epoch: 6, accuracy: 96.8, val_accuracy: 95.7, loss: 0.15 },
-    { epoch: 7, accuracy: 98.2, val_accuracy: 97.6, loss: 0.1 },
-    { epoch: 8, accuracy: 99.1, val_accuracy: 98.8, loss: 0.08 },
-    { epoch: 9, accuracy: 99.5, val_accuracy: 99.2, loss: 0.05 },
-    { epoch: 10, accuracy: 99.8, val_accuracy: 99.6, loss: 0.02 },
+    { epoch: 1, accuracy: 62.1, val_accuracy: 58.8, loss: 1.35 },
+    { epoch: 2, accuracy: 73.5, val_accuracy: 70.2, loss: 0.92 },
+    { epoch: 3, accuracy: 81.4, val_accuracy: 78.6, loss: 0.61 },
+    { epoch: 4, accuracy: 87.3, val_accuracy: 85.1, loss: 0.42 },
+    { epoch: 5, accuracy: 91.0, val_accuracy: 89.4, loss: 0.29 },
+    { epoch: 6, accuracy: 93.6, val_accuracy: 92.1, loss: 0.21 },
+    { epoch: 7, accuracy: 95.2, val_accuracy: 93.8, loss: 0.16 },
+    { epoch: 8, accuracy: 96.1, val_accuracy: 95.0, loss: 0.12 },
+    { epoch: 9, accuracy: 96.8, val_accuracy: 95.9, loss: 0.09 },
+    { epoch: 10, accuracy: 97.2, val_accuracy: 96.4, loss: 0.07 },
 ];
 
 // ── Class distribution pie ──
@@ -48,7 +48,7 @@ const DatasetSection: React.FC = () => {
                         Training & <span className="text-gradient-blue">Performance</span>
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        Trained on 1.45M+ URLs combining PhishTank, OpenPhish, and custom zero-day examples — achieving state-of-the-art detection accuracy.
+                        Trained on 235K+ URLs combining PhishTank, OpenPhish, and custom zero-day examples — achieving high detection accuracy.
                     </p>
                 </motion.div>
 
@@ -88,9 +88,9 @@ const DatasetSection: React.FC = () => {
                             </div>
                             <div className="space-y-3 text-sm">
                                 {[
-                                    { label: 'Total Samples', value: '1,450,000+', color: '#fff' },
-                                    { label: 'Phishing URLs', value: '725,000', color: '#FF3B3B' },
-                                    { label: 'Legitimate URLs', value: '725,000', color: '#00FFB2' },
+                                    { label: 'Total Samples', value: '235,795', color: '#fff' },
+                                    { label: 'Phishing URLs', value: '117,898', color: '#FF3B3B' },
+                                    { label: 'Legitimate URLs', value: '117,897', color: '#00FFB2' },
                                     { label: 'Train / Val Split', value: '80% / 20%', color: '#00AEEF' },
                                 ].map((row, i) => (
                                     <div key={i} className="flex justify-between py-2"
@@ -117,10 +117,10 @@ const DatasetSection: React.FC = () => {
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { value: '99.8%', label: 'Accuracy', color: '#00FFB2' },
-                                    { value: '99.5%', label: 'Precision', color: '#00AEEF' },
-                                    { value: '99.7%', label: 'Recall', color: '#7C3AED' },
-                                    { value: '99.6%', label: 'F1-Score', color: '#FFB347' },
+                                    { value: '97.2%', label: 'Accuracy', color: '#00FFB2' },
+                                    { value: '96.8%', label: 'Precision', color: '#00AEEF' },
+                                    { value: '97.5%', label: 'Recall', color: '#7C3AED' },
+                                    { value: '97.1%', label: 'F1-Score', color: '#FFB347' },
                                 ].map((m, i) => (
                                     <motion.div
                                         key={i}

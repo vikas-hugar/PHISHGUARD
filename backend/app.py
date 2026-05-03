@@ -489,7 +489,7 @@ def calculate_rule_score(url, domain):
 # HYBRID SCORING ENGINE
 #
 # The CNN-BiLSTM model captures learned
-# sequential patterns from 500k+ URLs.
+# sequential patterns from 235K+ URLs.
 # Rule-based layer catches zero-day patterns
 # the model may not have seen.
 #

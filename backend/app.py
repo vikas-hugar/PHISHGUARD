@@ -596,6 +596,14 @@ def predict():
 
 
 # =========================================
+# WARMUP TO PREVENT COLD-START TIMEOUTS
+# =========================================
+print("[PhishGuard] Warming up deep learning model...")
+dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
+model.predict(dummy_seq, verbose=0)
+print("[PhishGuard] Model warmed up and ready to serve requests!")
+
+# =========================================
 # RUN FLASK APP
 # =========================================
 

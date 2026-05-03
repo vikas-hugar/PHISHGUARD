@@ -259,7 +259,10 @@ const HeroSection = () => {
                             </div>
 
                             {/* URL scan items */}
-                            <div className="space-y-3 mb-6">
+                            <div className="space-y-3 mb-6 relative">
+                                {/* Vertical connection line */}
+                                <div className="absolute left-[22px] top-4 bottom-4 w-px bg-gradient-to-b from-primary/30 via-secondary/30 to-transparent" />
+                                
                                 {[
                                     { url: 'auth-apple-secure.verify-account.com', status: 'suspicious', prob: '74%', color: '#FFB347' },
                                     { url: 'paypal-transaction-issue.net/login', status: 'phishing', prob: '99%', color: '#FF3B3B' },
@@ -270,52 +273,65 @@ const HeroSection = () => {
                                         initial={{ x: 50, opacity: 0 }}
                                         animate={{ x: 0, opacity: 1 }}
                                         transition={{ delay: 0.5 + i * 0.2 }}
-                                        className="p-3.5 rounded-xl flex justify-between items-center gap-3"
+                                        className="relative p-3.5 rounded-xl flex justify-between items-center gap-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors group"
                                         style={{
-                                            background: 'rgba(255,255,255,0.03)',
-                                            border: `1px solid ${item.color}22`,
+                                            border: `1px solid ${item.color}15`,
                                         }}
                                     >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            {item.status === 'phishing'
-                                                ? <ShieldAlert className="w-4 h-4 shrink-0" style={{ color: item.color }} />
-                                                : item.status === 'safe'
-                                                    ? <Lock className="w-4 h-4 shrink-0" style={{ color: item.color }} />
-                                                    : <Zap className="w-4 h-4 shrink-0" style={{ color: item.color }} />}
-                                            <span className="text-xs font-mono text-gray-400 truncate">{item.url}</span>
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            <div className="relative flex items-center justify-center w-8 h-8 rounded-lg shrink-0"
+                                                style={{ background: `${item.color}10`, border: `1px solid ${item.color}30` }}>
+                                                {item.status === 'phishing'
+                                                    ? <ShieldAlert className="w-4 h-4" style={{ color: item.color }} />
+                                                    : item.status === 'safe'
+                                                        ? <Lock className="w-4 h-4" style={{ color: item.color }} />
+                                                        : <Zap className="w-4 h-4" style={{ color: item.color }} />}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-mono text-gray-300 truncate group-hover:text-white transition-colors">{item.url}</span>
+                                                <span className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: item.color }}>{item.status}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                            <span className="text-sm font-black" style={{ color: item.color }}>{item.prob}</span>
                                             <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
                                                 <motion.div
                                                     initial={{ width: 0 }}
                                                     animate={{ width: item.prob }}
                                                     transition={{ delay: 0.7 + i * 0.2, duration: 0.8 }}
                                                     className="h-full rounded-full"
-                                                    style={{ background: item.color }}
+                                                    style={{ background: item.color, boxShadow: `0 0 10px ${item.color}` }}
                                                 />
                                             </div>
-                                            <span className="text-xs font-bold" style={{ color: item.color }}>{item.prob}</span>
                                         </div>
                                     </motion.div>
                                 ))}
                             </div>
 
                             {/* Mini radar chart decoration */}
-                            <div className="flex items-center gap-6 px-2">
-                                <div className="relative w-16 h-16 flex items-center justify-center">
-                                    <div className="absolute inset-0 rounded-full border border-primary/20" />
-                                    <div className="absolute inset-2 rounded-full border border-primary/15" />
-                                    <div className="absolute inset-4 rounded-full border border-primary/10" />
-                                    <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-radar-spin"
-                                        style={{
-                                            background: 'conic-gradient(rgba(0,174,239,0.15) 0deg, transparent 90deg)',
-                                        }} />
-                                    <Activity className="w-4 h-4 text-primary" />
+                            <div className="flex items-center justify-between px-2 py-3 mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative w-12 h-12 flex items-center justify-center">
+                                        <div className="absolute inset-0 rounded-full border border-primary/20" />
+                                        <div className="absolute inset-2 rounded-full border border-primary/10" />
+                                        <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-radar-spin"
+                                            style={{
+                                                background: 'conic-gradient(rgba(0,174,239,0.15) 0deg, transparent 90deg)',
+                                            }} />
+                                        <Activity className="w-4 h-4 text-primary relative z-10" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold text-white flex items-center gap-2">
+                                            CNN–BiLSTM
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary border border-primary/30">Active</span>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-0.5 font-mono">1D-CNN → LSTM → Dense</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div className="text-xs text-gray-500 mb-1">CNN–BiLSTM Pipeline</div>
-                                    <div className="text-sm font-bold text-white">Optimized · Active</div>
-                                    <div className="text-xs text-gray-500 mt-1 font-mono">layers: 1D-CNN → LSTM → Dense</div>
+                                
+                                <div className="text-right">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Status</div>
+                                    <div className="text-xs font-semibold text-secondary glow-text-green">Monitoring</div>
                                 </div>
                             </div>
 
@@ -336,17 +352,21 @@ const HeroSection = () => {
                             </motion.div>
 
                             <motion.div
-                                animate={{ y: [0, 10, 0] }}
+                                animate={{ y: [0, 8, 0] }}
                                 transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }}
-                                className="absolute -left-6 bottom-8 px-3 py-2 rounded-xl text-xs font-bold"
+                                className="absolute -right-8 bottom-12 px-3 py-2 rounded-xl text-xs font-bold"
                                 style={{
                                     background: 'rgba(10,15,44,0.9)',
                                     border: '1px solid rgba(0,255,178,0.3)',
                                     backdropFilter: 'blur(12px)',
+                                    boxShadow: '0 0 20px rgba(0,255,178,0.15)',
                                     color: '#00FFB2',
                                 }}
                             >
-                                Zero-Day Ready
+                                <span className="flex items-center gap-1.5">
+                                    <ShieldAlert className="w-3.5 h-3.5" />
+                                    Zero-Day Ready
+                                </span>
                             </motion.div>
                         </div>
                     </motion.div>

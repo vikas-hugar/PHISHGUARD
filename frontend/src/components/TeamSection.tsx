@@ -24,9 +24,9 @@ const TeamSection: React.FC = () => {
                     </h2>
                     <div className="flex items-center justify-center gap-2 mt-4 mb-2">
                         <GraduationCap className="w-5 h-5 text-primary" />
-                        <span className="text-gray-400 font-medium text-sm">Final Year Engineering Project — 2025/2026</span>
+                        <span className="text-gray-300 font-medium text-sm">Final Year Engineering Project (2025–2026)</span>
                     </div>
-                    <p className="text-gray-600 text-sm">Department of Computer Science & Engineering</p>
+                    <p className="text-gray-500 text-xs font-mono">Hybrid CNN–BiLSTM + RoBERTa Framework for Zero-Day Phishing Detection</p>
                 </motion.div>
 
                 {/* Cards */}

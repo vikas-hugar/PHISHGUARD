@@ -24,7 +24,7 @@ const AboutSection: React.FC = () => {
                         The <span className="text-gradient-blue">Zero-Day</span> Problem
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        Traditional detection systems fail against previously unseen phishing attacks. Our research proposes an adaptable CNN–BiLSTM framework that learns patterns — not blacklists.
+                        Traditional detection systems fail against previously unseen phishing attacks. Our research proposes an adaptable Hybrid CNN–BiLSTM + RoBERTa framework that learns patterns — not blacklists.
                     </p>
                 </motion.div>
 
@@ -46,7 +46,7 @@ const AboutSection: React.FC = () => {
                         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                             style={{ background: 'rgba(255,59,59,0.12)' }} />
 
-                        <div className="w-13 h-13 w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
                             style={{ background: 'rgba(255,59,59,0.12)', border: '1px solid rgba(255,59,59,0.3)' }}>
                             <AlertTriangle className="w-6 h-6 text-dangerous" />
                         </div>
@@ -89,32 +89,26 @@ const AboutSection: React.FC = () => {
                             style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.3)' }}>
                             <Network className="w-6 h-6 text-primary" />
                         </div>
-                        <h3 className="text-xl font-bold mb-3 text-white">The CNN–BiLSTM Advantage</h3>
+                        <h3 className="text-xl font-bold mb-3 text-white">Why Hybrid AI Wins</h3>
                         <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                            By combining CNNs for spatial feature extraction with LSTM for sequential context modelling, our model generalizes to zero-day threats — no prior knowledge of the URL required.
+                            The hybrid architecture combines structural CNN features, BiLSTM sequential memory, and RoBERTa semantic understanding to detect sophisticated zero-day phishing URLs.
                         </p>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                                    style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.25)' }}>
-                                    <Cpu className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-white">CNN for Spatial Features</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">Detects local anomalies: weird domain structures, excessive hyphens, brand spoofing patterns.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                                    style={{ background: 'rgba(0,255,178,0.1)', border: '1px solid rgba(0,255,178,0.25)' }}>
-                                    <Network className="w-4 h-4 text-secondary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-white">LSTM for Sequential Context</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">Maintains long-range memory across the full URL string to identify distributed obfuscation tactics.</p>
-                                </div>
-                            </div>
-                        </div>
+                        <ul className="space-y-3.5">
+                            {[
+                                { title: 'CNN extracts structural URL patterns', desc: 'Captures spatial character arrangements, anomalous subdomains, and obfuscated TLDs.' },
+                                { title: 'BiLSTM captures long-range dependencies', desc: 'Maintains sequential context across extended URLs to detect split tokens.' },
+                                { title: 'RoBERTa understands semantic phishing intent', desc: 'Transformer NLP analyzes brand impersonation, urgency cues, and context.' },
+                                { title: 'Hybrid fusion reduces false positives', desc: 'Weighted 35% CNN + 65% RoBERTa decision engine yields reliable verdicts.' },
+                            ].map((item, i) => (
+                                <li key={i} className="flex items-start gap-3">
+                                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#00FFB2' }} />
+                                    <div>
+                                        <p className="text-sm font-bold text-white leading-snug">{item.title}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
                     </motion.div>
                 </div>
 
@@ -137,15 +131,15 @@ const AboutSection: React.FC = () => {
                             <GraduationCap className="w-7 h-7 text-primary" />
                         </div>
                         <div>
-                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Final Year Project</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Final Year Engineering Project (2025–2026)</div>
                             <h3 className="font-bold text-white text-lg">
-                                Enhancing Adaptability to Zero-Day Phishing URL Attacks
+                                PhishGuard AI V3
                             </h3>
-                            <p className="text-sm text-gray-500 mt-0.5">Using an Optimized CNN–BiLSTM Deep Learning Model</p>
+                            <p className="text-sm text-gray-400 mt-0.5">Using a Hybrid CNN–BiLSTM + RoBERTa Deep Learning Framework</p>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 shrink-0">
-                        {['Deep Learning', 'CNN–BiLSTM', 'Cybersecurity', 'NLP', 'Flask API', 'React'].map(tag => (
+                    <div className="flex flex-wrap gap-2.5 shrink-0">
+                        {['Deep Learning', 'CNN', 'BiLSTM', 'RoBERTa', 'Cybersecurity', 'Flask API', 'React'].map(tag => (
                             <span key={tag} className="text-xs px-3 py-1.5 rounded-full font-semibold"
                                 style={{
                                     background: 'rgba(0,174,239,0.08)',

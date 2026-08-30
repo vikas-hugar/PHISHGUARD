@@ -3,24 +3,18 @@ import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { BarChart2, Database, Settings } from 'lucide-react';
 
-// ── Training data ──
+// ── Training data (Hybrid Model Convergence) ──
 const trainingData = [
-    { epoch: 1, accuracy: 99.23, val_accuracy: 99.80, loss: 0.0260 },
-    { epoch: 2, accuracy: 99.79, val_accuracy: 99.80, loss: 0.0131 },
-    { epoch: 3, accuracy: 99.70, val_accuracy: 99.82, loss: 0.0179 },
-    { epoch: 4, accuracy: 99.80, val_accuracy: 99.80, loss: 0.0123 },
-    { epoch: 5, accuracy: 99.80, val_accuracy: 99.82, loss: 0.0123 },
-    { epoch: 6, accuracy: 99.81, val_accuracy: 99.81, loss: 0.0116 },
-    { epoch: 7, accuracy: 99.81, val_accuracy: 99.82, loss: 0.0114 },
-    { epoch: 8, accuracy: 99.82, val_accuracy: 99.80, loss: 0.0112 },
-    { epoch: 9, accuracy: 99.82, val_accuracy: 99.84, loss: 0.0109 },
-    { epoch: 10, accuracy: 99.84, val_accuracy: 99.83, loss: 0.0100 },
+    { epoch: 'Epoch 1', accuracy: 91.80, val_accuracy: 93.10, loss: 0.1850 },
+    { epoch: 'Epoch 2', accuracy: 93.90, val_accuracy: 94.40, loss: 0.1280 },
+    { epoch: 'Epoch 3', accuracy: 94.80, val_accuracy: 94.90, loss: 0.0960 },
+    { epoch: 'Epoch 4*', accuracy: 95.40, val_accuracy: 95.17, loss: 0.0810 },
 ];
 
-// ── Class distribution pie ──
+// ── Class distribution pie (1,532,239 URLs) ──
 const classDist = [
-    { name: 'Phishing URLs', value: 50, color: '#FF3B3B' },
-    { name: 'Legitimate URLs', value: 50, color: '#00FFB2' },
+    { name: 'Phishing URLs (720,618)', value: 47, color: '#FF3B3B' },
+    { name: 'Legitimate URLs (811,621)', value: 53, color: '#00FFB2' },
 ];
 
 const DatasetSection: React.FC = () => {
@@ -48,7 +42,7 @@ const DatasetSection: React.FC = () => {
                         Training & <span className="text-gradient-blue">Performance</span>
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        Trained on 235K+ URLs combining PhishTank, OpenPhish, and custom zero-day examples — achieving high detection accuracy.
+                        Trained on 1,532,239 URLs combining PhishTank, OpenPhish, and verified legitimate corpuses — evaluated on Hybrid CNN–BiLSTM + RoBERTa (V3).
                     </p>
                 </motion.div>
 
@@ -88,15 +82,16 @@ const DatasetSection: React.FC = () => {
                             </div>
                             <div className="space-y-3 text-sm">
                                 {[
-                                    { label: 'Total Samples', value: '235,795', color: '#fff' },
-                                    { label: 'Phishing URLs', value: '117,898', color: '#FF3B3B' },
-                                    { label: 'Legitimate URLs', value: '117,897', color: '#00FFB2' },
-                                    { label: 'Train / Val Split', value: '80% / 20%', color: '#00AEEF' },
+                                    { label: 'Total Samples', value: '1,532,239', color: '#fff' },
+                                    { label: 'Legitimate URLs', value: '811,621', color: '#00FFB2' },
+                                    { label: 'Phishing URLs', value: '720,618', color: '#FF3B3B' },
+                                    { label: 'Train / Validation', value: '80% / 20%', color: '#00AEEF' },
+                                    { label: 'Architecture', value: 'Hybrid V3', color: '#FFB347' },
                                 ].map((row, i) => (
                                     <div key={i} className="flex justify-between py-2"
                                         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <span className="text-gray-500">{row.label}</span>
-                                        <span className="font-bold" style={{ color: row.color }}>{row.value}</span>
+                                        <span className="font-bold font-mono" style={{ color: row.color }}>{row.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -113,14 +108,14 @@ const DatasetSection: React.FC = () => {
                         >
                             <h3 className="font-bold text-white mb-5 flex items-center gap-2 text-sm">
                                 <Settings className="w-4 h-4 text-secondary" />
-                                Model Metrics
+                                Model Metrics (Hybrid AI V3)
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { value: '99.84%', label: 'Accuracy', color: '#00FFB2' },
-                                    { value: '99.81%', label: 'Precision', color: '#00AEEF' },
-                                    { value: '99.86%', label: 'Recall', color: '#7C3AED' },
-                                    { value: '99.83%', label: 'F1-Score', color: '#FFB347' },
+                                    { value: '95.17%', label: 'Accuracy', color: '#00FFB2' },
+                                    { value: '94.63%', label: 'Precision', color: '#00AEEF' },
+                                    { value: '94.87%', label: 'Recall', color: '#7C3AED' },
+                                    { value: '94.75%', label: 'F1', color: '#FFB347' },
                                 ].map((m, i) => (
                                     <motion.div
                                         key={i}
@@ -152,9 +147,9 @@ const DatasetSection: React.FC = () => {
                     >
                         <h3 className="font-bold text-white mb-2 flex items-center gap-2 text-sm">
                             <BarChart2 className="w-4 h-4 text-primary" />
-                            Training Progress — 10 Epochs
+                            Training & Convergence — Hybrid Model (V3)
                         </h3>
-                        <p className="text-xs text-gray-600 mb-7 font-mono">accuracy vs val_accuracy · loss curve</p>
+                        <p className="text-xs text-gray-400 mb-7 font-mono">accuracy vs val_accuracy · loss curve (95.17% target accuracy)</p>
 
                         {/* Accuracy chart */}
                         <div className="h-52 mb-3">
@@ -172,7 +167,7 @@ const DatasetSection: React.FC = () => {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                     <XAxis dataKey="epoch" stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} />
-                                    <YAxis stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} domain={[99, 100]} />
+                                    <YAxis stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} domain={[90, 100]} />
                                     <Tooltip
                                         contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(0,174,239,0.25)', borderRadius: 10, fontSize: 12 }}
                                         labelStyle={{ color: '#9CA3AF' }}

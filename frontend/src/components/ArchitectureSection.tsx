@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Database, Cpu, Activity, LayoutGrid, ArrowDown, Layers, Binary } from 'lucide-react';
+import { Database, Cpu, Activity, LayoutGrid, ArrowDown, Layers, Binary, ShieldCheck, ShieldAlert, AlertTriangle, Sparkles, GitMerge } from 'lucide-react';
 
-// ── Pipeline node data ──
+// ── Pipeline node data (Hybrid CNN–BiLSTM + RoBERTa V3 Architecture) ──
 const nodes = [
     {
         id: 'input',
-        label: 'Input URL Data',
-        sub: 'http://secure-login.paypal-update.com/auth',
+        label: 'Input URL Sequence',
+        sub: 'Raw URL string normalized, tokenized (max 512 tokens / 250 characters)',
         icon: Database,
         color: '#6B7280',
         border: 'rgba(107,114,128,0.3)',
@@ -15,8 +15,8 @@ const nodes = [
     },
     {
         id: 'embed',
-        label: 'Lexical Tokenization & Embedding',
-        sub: 'Characters → dense vectors (dim=128)',
+        label: 'Embedding Layer',
+        sub: 'Lexical embedding layer (128-D) mapping character vocab into dense vectors',
         icon: Binary,
         color: '#7C3AED',
         border: 'rgba(124,58,237,0.35)',
@@ -24,8 +24,8 @@ const nodes = [
     },
     {
         id: 'cnn',
-        label: 'Convolutional Layer (1D-CNN)',
-        sub: 'Filters detect structural anomalies · outputs spatial feature maps',
+        label: 'CNN Feature Extraction',
+        sub: '256 Conv1D spatial filters (kernel=5, ReLU) + MaxPooling1D for n-gram features',
         icon: LayoutGrid,
         color: '#00AEEF',
         border: 'rgba(0,174,239,0.35)',
@@ -33,26 +33,35 @@ const nodes = [
     },
     {
         id: 'lstm',
-        label: 'Bidirectional LSTM (BiLSTM)',
-        sub: 'Processes CNN maps bidirectionally · captures long-range obfuscation patterns in both directions',
+        label: 'BiLSTM Context Memory',
+        sub: '128 Bidirectional LSTM units capturing long-range bidirectional sequence dependencies',
         icon: Activity,
         color: '#00FFB2',
         border: 'rgba(0,255,178,0.35)',
         bg: 'rgba(0,255,178,0.07)',
     },
     {
-        id: 'reg',
-        label: 'Regularization (Dropout)',
-        sub: 'Prevents over-fitting — rate 0.4',
-        icon: Layers,
-        color: '#FFB347',
-        border: 'rgba(255,179,71,0.3)',
-        bg: 'rgba(255,179,71,0.06)',
+        id: 'roberta',
+        label: 'RoBERTa Semantic Encoder',
+        sub: 'RoBERTa-base (768-D) transformer fine-tuned for semantic phishing and brand intent',
+        icon: Sparkles,
+        color: '#FACC15',
+        border: 'rgba(250,204,21,0.35)',
+        bg: 'rgba(250,204,21,0.07)',
+    },
+    {
+        id: 'fusion',
+        label: 'Weighted Fusion Layer',
+        sub: 'Dynamic ensemble: 35% CNN structural score + 65% RoBERTa semantic score',
+        icon: GitMerge,
+        color: '#FB923C',
+        border: 'rgba(251,146,60,0.35)',
+        bg: 'rgba(251,146,60,0.07)',
     },
     {
         id: 'output',
-        label: 'Dense → Sigmoid Output',
-        sub: 'Safe / Suspicious / Phishing (Hybrid Decision Layer)',
+        label: 'Dense Classification',
+        sub: 'Final classification layer outputting calibrated threat probability with Explainable AI',
         icon: Cpu,
         color: '#FF3B3B',
         gradient: 'linear-gradient(135deg, rgba(255,59,59,0.15), rgba(0,174,239,0.08))',
@@ -80,10 +89,10 @@ const ArchitectureSection: React.FC = () => {
                 >
                     <div className="section-label mb-6 mx-auto">Deep Learning Pipeline</div>
                     <h2 className="text-4xl md:text-5xl font-bold mb-5">
-                        Model <span className="text-gradient-blue">Architecture</span>
+                        Hybrid Model <span className="text-gradient-blue">Architecture (V3)</span>
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        A hybrid CNN-BiLSTM pipeline that extracts spatial features and maintains sequential memory for highly accurate phishing detection.
+                        Production Hybrid CNN–BiLSTM + RoBERTa V3 pipeline combining 256 Conv1D spatial filters, 128 BiLSTM sequential memory cells, and fine-tuned RoBERTa transformer.
                     </p>
                 </motion.div>
 
@@ -111,7 +120,7 @@ const ArchitectureSection: React.FC = () => {
                                                 initial={{ opacity: 0, y: -20 }}
                                                 whileInView={{ opacity: 1, y: 0 }}
                                                 viewport={{ once: true }}
-                                                transition={{ delay: i * 0.1 }}
+                                                transition={{ delay: i * 0.08 }}
                                                 className="w-full max-w-lg rounded-2xl p-4 md:p-5"
                                                 style={{
                                                     background: node.gradient || node.bg,
@@ -127,7 +136,7 @@ const ArchitectureSection: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <h4 className="font-bold text-sm mb-1" style={{ color: node.color }}>{node.label}</h4>
-                                                        <p className="text-xs text-gray-500 leading-relaxed font-mono">{node.sub}</p>
+                                                        <p className="text-xs text-gray-400 leading-relaxed font-mono">{node.sub}</p>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -138,7 +147,7 @@ const ArchitectureSection: React.FC = () => {
                                                     initial={{ opacity: 0 }}
                                                     whileInView={{ opacity: 1 }}
                                                     viewport={{ once: true }}
-                                                    transition={{ delay: i * 0.1 + 0.05 }}
+                                                    transition={{ delay: i * 0.08 + 0.04 }}
                                                     className="flex flex-col items-center gap-0.5"
                                                 >
                                                     <div className="w-px h-5 bg-gradient-to-b from-white/10 to-white/5" />
@@ -172,14 +181,15 @@ const ArchitectureSection: React.FC = () => {
                             </h3>
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Embedding Dim', value: '128' },
-                                    { label: 'CNN Filters', value: '128, kernel=5' },
-                                    { label: 'BiLSTM Units', value: '64' },
-                                    { label: 'Dropout Rate', value: '0.4' },
-                                    { label: 'Dense Units', value: '64 → Sigmoid' },
+                                    { label: 'Dataset', value: '1,532,239 URLs' },
+                                    { label: 'Embedding', value: '128' },
+                                    { label: 'CNN Filters', value: '256' },
+                                    { label: 'BiLSTM', value: '128' },
+                                    { label: 'Transformer', value: 'RoBERTa-base' },
+                                    { label: 'Fusion', value: '35% + 65%' },
+                                    { label: 'Accuracy', value: '95.17%' },
                                     { label: 'Optimizer', value: 'Adam (lr=0.001)' },
-                                    { label: 'Loss Function', value: 'Binary CE' },
-                                    { label: 'Epochs', value: '10' },
+                                    { label: 'Loss Function', value: 'Binary Cross-Entropy' },
                                 ].map((item, i) => (
                                     <motion.div
                                         key={i}
@@ -197,7 +207,7 @@ const ArchitectureSection: React.FC = () => {
                             </div>
                         </motion.div>
 
-                        {/* Output classes */}
+                        {/* Output classes & Threat Levels */}
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             whileInView={{ opacity: 1, x: 0 }}
@@ -207,18 +217,25 @@ const ArchitectureSection: React.FC = () => {
                             style={{ border: '1px solid rgba(0,174,239,0.12)' }}
                         >
                             <h3 className="font-bold text-sm uppercase tracking-wider mb-4" style={{ color: '#00AEEF' }}>
-                                Output Classes
+                                Enterprise Threat Levels
                             </h3>
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {[
-                                    { label: '✅ Safe', desc: 'Legitimate URL', color: '#00FFB2' },
-                                    { label: '⚠️ Suspicious', desc: 'May be malicious', color: '#FFB347' },
-                                    { label: '🚨 Phishing', desc: 'Confirmed phishing', color: '#FF3B3B' },
+                                    { label: '0–29', name: 'Safe', desc: 'Legitimate verified domain', color: '#00FFB2' },
+                                    { label: '30–59', name: 'Medium', desc: 'Suspicious structural anomalies', color: '#FACC15' },
+                                    { label: '60–84', name: 'High', desc: 'Elevated phishing indicators', color: '#FB923C' },
+                                    { label: '85–100', name: 'Critical', desc: 'Confirmed zero-day attack', color: '#FF3B3B' },
                                 ].map((c, i) => (
                                     <div key={i} className="flex items-center justify-between text-xs p-2.5 rounded-xl"
                                         style={{ background: `${c.color}08`, border: `1px solid ${c.color}20` }}>
-                                        <span className="font-bold" style={{ color: c.color }}>{c.label}</span>
-                                        <span className="text-gray-500">{c.desc}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono font-bold px-1.5 py-0.5 rounded text-[10px]"
+                                                style={{ background: `${c.color}15`, color: c.color }}>
+                                                {c.label}
+                                            </span>
+                                            <span className="font-bold" style={{ color: c.color }}>{c.name}</span>
+                                        </div>
+                                        <span className="text-gray-400 text-[11px]">{c.desc}</span>
                                     </div>
                                 ))}
                             </div>

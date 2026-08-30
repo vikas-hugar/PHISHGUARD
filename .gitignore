@@ -1,9 +1,12 @@
 node_modules/
 __pycache__/
 *.pkl
-!backend/tokenizer.pkl
+!backend/*.pkl
 *.pyc
 .env
 venv/
 dist/
 build/
+*.safetensors
+*.bin
+errors.txt

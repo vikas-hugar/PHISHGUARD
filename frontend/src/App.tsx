@@ -30,7 +30,7 @@ function App() {
                 {/* 3. Features — 6 capability cards */}
                 <FeaturesSection />
 
-                {/* 4. How It Works — CNN–BiLSTM pipeline flowchart */}
+                {/* 4. How It Works — Hybrid CNN–BiLSTM + RoBERTa pipeline flowchart */}
                 <HowItWorksSection />
 
                 {/* 5. Architecture — layer-by-layer deep learning pipeline */}

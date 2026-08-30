@@ -1,30 +1,30 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Shield, Cpu, Eye, Globe, Lock, TrendingUp, BarChart2 } from 'lucide-react';
+import { Zap, Shield, Cpu, Eye, Globe, Lock, TrendingUp, BarChart2, BrainCircuit } from 'lucide-react';
 
 const features = [
     {
         icon: Zap,
         title: 'Zero-Day Adaptability',
-        description: 'Unlike rule-based systems, our CNN–BiLSTM model generalizes to previously unseen phishing patterns — no blacklists needed.',
+        description: 'Unlike rule-based systems, our Hybrid CNN–BiLSTM + RoBERTa model generalizes to previously unseen phishing patterns — no blacklists needed.',
         color: '#00AEEF',
         gradient: 'linear-gradient(135deg, rgba(0,174,239,0.12), rgba(0,174,239,0.04))',
         border: 'rgba(0,174,239,0.2)',
         glow: 'rgba(0,174,239,0.15)',
     },
     {
-        icon: Cpu,
-        title: 'CNN Feature Extraction',
-        description: '1D Convolutional filters detect spatial anomalies in URL character sequences — suspicious hyphens, long subdomain chains, unusual TLDs.',
+        icon: BrainCircuit,
+        title: 'RoBERTa Semantic Intelligence',
+        description: 'Transformer-based NLP identifies contextual phishing, brand impersonation, and zero-day semantic attacks.',
         color: '#7C3AED',
         gradient: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(124,58,237,0.04))',
         border: 'rgba(124,58,237,0.2)',
         glow: 'rgba(124,58,237,0.15)',
     },
     {
-        icon: Eye,
-        title: 'LSTM Sequence Memory',
-        description: 'Long Short-Term Memory layers capture subtle long-range obfuscation patterns that span the full URL string.',
+        icon: Cpu,
+        title: 'Hybrid Decision Fusion',
+        description: 'Final prediction combines CNN (35%) and RoBERTa (65%) for highly reliable phishing detection.',
         color: '#00FFB2',
         gradient: 'linear-gradient(135deg, rgba(0,255,178,0.1), rgba(0,255,178,0.03))',
         border: 'rgba(0,255,178,0.2)',
@@ -33,7 +33,7 @@ const features = [
     {
         icon: Shield,
         title: 'Real-Time Detection',
-        description: 'End-to-end inference completes in under 100ms — fast enough for browser extensions and live monitoring dashboards.',
+        description: 'End-to-end inference completes in under 215ms — fast enough for browser extensions and live monitoring dashboards.',
         color: '#FF3B3B',
         gradient: 'linear-gradient(135deg, rgba(255,59,59,0.1), rgba(255,59,59,0.03))',
         border: 'rgba(255,59,59,0.2)',

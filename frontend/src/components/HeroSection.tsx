@@ -159,7 +159,7 @@ const HeroSection = () => {
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
                             </span>
                             <span className="text-xs font-semibold tracking-widest uppercase text-primary">
-                                AI-Powered · Zero-Day Detection
+                                AI-POWERED • HYBRID ZERO-DAY DETECTION
                             </span>
                         </motion.div>
 
@@ -184,8 +184,7 @@ const HeroSection = () => {
                             transition={{ delay: 0.3, duration: 0.7 }}
                             className="text-lg text-gray-400 max-w-xl leading-relaxed"
                         >
-                            Real-time phishing URL detection powered by an <span className="text-primary font-semibold">optimized CNN–BiLSTM</span> deep learning model. 
-                            Adaptable to zero-day attacks with 99.8% accuracy.
+                            Real-time phishing URL detection powered by a <span className="text-primary font-semibold">Hybrid CNN–BiLSTM + RoBERTa</span> architecture for semantic and structural zero-day attack detection.
                         </motion.p>
 
                         {/* CTA buttons */}
@@ -214,9 +213,9 @@ const HeroSection = () => {
                             style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
                         >
                             {[
-                                { value: '99.8%', label: 'Detection Accuracy' },
-                                { value: '<1s', label: 'Avg Response Time' },
-                                { value: '235K+', label: 'URLs Trained On' },
+                                { value: '95.17%', label: 'Test Accuracy' },
+                                { value: '215 ms', label: 'Avg Latency' },
+                                { value: '1,532,239', label: 'URLs Trained' },
                             ].map((s, i) => (
                                 <div key={i} className="flex flex-col">
                                     <span className="text-2xl font-bold text-white glow-text-blue">{s.value}</span>
@@ -325,10 +324,10 @@ const HeroSection = () => {
                                     </div>
                                     <div>
                                         <div className="text-sm font-bold text-white flex items-center gap-2">
-                                            CNN–BiLSTM
+                                            CNN–BiLSTM + RoBERTa Hybrid
                                             <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary border border-primary/30">Active</span>
                                         </div>
-                                        <div className="text-xs text-gray-500 mt-0.5 font-mono">1D-CNN → LSTM → Dense</div>
+                                        <div className="text-xs text-gray-500 mt-0.5 font-mono">CNN + BiLSTM + RoBERTa</div>
                                     </div>
                                 </div>
                                 
@@ -353,7 +352,7 @@ const HeroSection = () => {
                                     color: '#00AEEF',
                                 }}
                             >
-                                99.8% Accuracy
+                                95.17% Test Accuracy
                             </motion.div>
 
                             <motion.div

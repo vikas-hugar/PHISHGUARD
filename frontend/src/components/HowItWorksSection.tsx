@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link2, Fingerprint, Cpu, BrainCircuit, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Link2, Fingerprint, Cpu, BrainCircuit, Sparkles, ShieldCheck, ArrowRight, GitMerge } from 'lucide-react';
 
-// ── Step data ──
+// ── Step data (6-Step Hybrid Architecture) ──
 const steps = [
     {
         id: '01',
         icon: Link2,
         title: 'URL Input',
-        description: 'Raw URL is received and normalised. Protocol, hostname, path and query parameters are separated for analysis.',
+        description: 'Raw URL string is ingested from client request, security telemetry, or real-time network stream.',
         color: '#00AEEF',
         glow: 'rgba(0,174,239,0.2)',
         border: 'rgba(0,174,239,0.35)',
@@ -17,8 +17,8 @@ const steps = [
     {
         id: '02',
         icon: Fingerprint,
-        title: 'Tokenization & Embedding',
-        description: 'Characters and sub-word tokens are mapped to dense high-dimensional vectors using a trained tokenizer.',
+        title: 'URL Normalization',
+        description: 'Protocol resolution, domain extraction, punycode decoding, and structural entropy metric computation.',
         color: '#7C3AED',
         glow: 'rgba(124,58,237,0.2)',
         border: 'rgba(124,58,237,0.35)',
@@ -28,7 +28,7 @@ const steps = [
         id: '03',
         icon: Cpu,
         title: 'CNN Feature Extraction',
-        description: '1D Convolutional filters sweep over the embedding matrix to detect local structural anomalies — unusual hyphens, suspicious TLDs, brand spoofing.',
+        description: '256 Conv1D spatial filters sweep character embeddings to extract localized n-gram anomalies and spoof patterns.',
         color: '#0077CC',
         glow: 'rgba(0,119,204,0.2)',
         border: 'rgba(0,119,204,0.35)',
@@ -38,7 +38,7 @@ const steps = [
         id: '04',
         icon: BrainCircuit,
         title: 'BiLSTM Context Analysis',
-        description: 'Bidirectional LSTM layers process the CNN feature maps as a sequence in both directions, capturing long-range dependencies and identifying obfuscation patterns across the full URL.',
+        description: '128-unit Bidirectional LSTM layers process sequential feature maps in both directions for long-range context.',
         color: '#00FFB2',
         glow: 'rgba(0,255,178,0.2)',
         border: 'rgba(0,255,178,0.35)',
@@ -46,9 +46,19 @@ const steps = [
     },
     {
         id: '05',
-        icon: ShieldCheck,
-        title: 'Prediction Output',
-        description: 'A Dense + Sigmoid layer outputs a probability score. High confidence → 🚨 Phishing / ⚠️ Suspicious / ✅ Safe, with a detailed feature breakdown.',
+        icon: Sparkles,
+        title: 'RoBERTa Semantic Analysis',
+        description: 'Pretrained transformer encoder analyzes lexical brand semantics, urgency triggers, and obfuscated intent.',
+        color: '#FACC15',
+        glow: 'rgba(250,204,21,0.2)',
+        border: 'rgba(250,204,21,0.35)',
+        bg: 'rgba(250,204,21,0.06)',
+    },
+    {
+        id: '06',
+        icon: GitMerge,
+        title: 'Hybrid Fusion & Prediction',
+        description: 'Ensemble layer fuses CNN (35%) + RoBERTa (65%) probabilities with explainable AI heuristics for final verdict.',
         color: '#FF3B3B',
         glow: 'rgba(255,59,59,0.2)',
         border: 'rgba(255,59,59,0.35)',
@@ -75,43 +85,43 @@ const HowItWorksSection: React.FC = () => {
                     className="text-center mb-20"
                 >
                     <div className="section-label mb-6 mx-auto">
-                        CNN–BiLSTM Pipeline
+                        Hybrid CNN–BiLSTM + RoBERTa Pipeline
                     </div>
                     <h2 className="text-4xl md:text-5xl font-bold mb-5">
                         How <span className="text-gradient-blue">It Works</span>
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
-                        A step-by-step walkthrough of the deep learning pipeline that takes a raw URL and produces a precise phishing verdict in under 100ms.
+                        A step-by-step walkthrough of the 6-stage deep learning pipeline that processes raw URLs and generates real-time hybrid verdicts in 215ms.
                     </p>
                 </motion.div>
 
                 {/* ── Desktop: Horizontal flowchart ── */}
                 <div className="hidden lg:block">
                     {/* Step cards row */}
-                    <div className="grid grid-cols-5 gap-0 relative">
+                    <div className="grid grid-cols-6 gap-2 relative">
                         {/* Connector line behind cards */}
-                        <div className="absolute top-[52px] left-[10%] right-[10%] h-px pointer-events-none"
-                            style={{ background: 'linear-gradient(90deg, #00AEEF33, #7C3AED33, #0077CC33, #00FFB233, #FF3B3B33)' }} />
+                        <div className="absolute top-[48px] left-[8%] right-[8%] h-px pointer-events-none"
+                            style={{ background: 'linear-gradient(90deg, #00AEEF33, #7C3AED33, #0077CC33, #00FFB233, #FACC1533, #FF3B3B33)' }} />
 
                         {steps.map((step, i) => {
                             const Icon = step.icon;
                             return (
-                                <div key={step.id} className="flex flex-col items-center px-2">
+                                <div key={step.id} className="flex flex-col items-center px-1.5">
                                     {/* Numbered icon node */}
                                     <motion.div
                                         initial={{ scale: 0, opacity: 0 }}
                                         whileInView={{ scale: 1, opacity: 1 }}
                                         viewport={{ once: true }}
-                                        transition={{ delay: i * 0.12, type: 'spring', stiffness: 200 }}
-                                        className="w-[104px] h-[104px] rounded-2xl flex flex-col items-center justify-center mb-6 relative z-10 cursor-default"
+                                        transition={{ delay: i * 0.1, type: 'spring', stiffness: 200 }}
+                                        className="w-[92px] h-[92px] rounded-2xl flex flex-col items-center justify-center mb-5 relative z-10 cursor-default"
                                         style={{
                                             background: step.bg,
                                             border: `1px solid ${step.border}`,
-                                            boxShadow: `0 0 25px ${step.glow}`,
+                                            boxShadow: `0 0 20px ${step.glow}`,
                                         }}
-                                        whileHover={{ scale: 1.06, boxShadow: `0 0 40px ${step.glow}` }}
+                                        whileHover={{ scale: 1.06, boxShadow: `0 0 35px ${step.glow}` }}
                                     >
-                                        <Icon className="w-8 h-8 mb-1" style={{ color: step.color }} />
+                                        <Icon className="w-7 h-7 mb-1" style={{ color: step.color }} />
                                         <span className="text-xs font-mono font-bold" style={{ color: step.color }}>{step.id}</span>
                                     </motion.div>
 
@@ -120,13 +130,13 @@ const HowItWorksSection: React.FC = () => {
                                         initial={{ opacity: 0, y: 20 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
-                                        transition={{ delay: i * 0.12 + 0.15 }}
+                                        transition={{ delay: i * 0.1 + 0.12 }}
                                         className="text-center"
                                     >
-                                        <h3 className="font-bold text-sm text-white mb-2" style={{ color: step.color }}>
+                                        <h3 className="font-bold text-xs sm:text-sm text-white mb-2" style={{ color: step.color }}>
                                             {step.title}
                                         </h3>
-                                        <p className="text-xs text-gray-500 leading-relaxed">{step.description}</p>
+                                        <p className="text-[11px] text-gray-500 leading-relaxed">{step.description}</p>
                                     </motion.div>
                                 </div>
                             );
@@ -140,12 +150,12 @@ const HowItWorksSection: React.FC = () => {
                                 key={i}
                                 className="absolute top-0 w-2 h-2 rounded-full"
                                 style={{ background: '#00AEEF', boxShadow: '0 0 8px #00AEEF' }}
-                                animate={{ x: ['10%', '90%'] }}
+                                animate={{ x: ['8%', '92%'] }}
                                 transition={{
-                                    duration: 3,
+                                    duration: 3.5,
                                     repeat: Infinity,
                                     ease: 'linear',
-                                    delay: i * 1,
+                                    delay: i * 1.1,
                                 }}
                             />
                         ))}
@@ -204,10 +214,10 @@ const HowItWorksSection: React.FC = () => {
                     className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
                 >
                     {[
-                        { label: 'Architecture', value: 'CNN + BiLSTM + Dense', sub: 'Hybrid deep learning' },
+                        { label: 'Architecture', value: 'CNN + BiLSTM + RoBERTa', sub: 'Hybrid deep learning' },
                         { label: 'Optimizer', value: 'Adam (lr=0.001)', sub: 'With LR scheduler' },
-                        { label: 'Inference Time', value: '< 100ms', sub: 'End-to-end per URL' },
-                        { label: 'Detection Method', value: 'Hybrid Detection', sub: 'Deep Learning + Rule-Based Verification' },
+                        { label: 'Inference', value: '215 ms', sub: 'End-to-end per URL' },
+                        { label: 'Detection', value: '35% CNN + 65% RoBERTa', sub: 'Hybrid Decision Fusion' },
                     ].map((item, i) => (
                         <div key={i} className="glass-surface rounded-2xl p-5 flex flex-col gap-1"
                             style={{ border: '1px solid rgba(0,174,239,0.12)' }}>

@@ -1,29 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lightbulb, TrendingUp, SearchCheck, Zap, BookOpen } from 'lucide-react';
+import { Lightbulb, TrendingUp, SearchCheck, Zap, BookOpen, GitMerge, Sparkles, Database } from 'lucide-react';
 
 const innovations = [
     {
-        title: 'Spatial-Temporal Fusion',
-        desc: 'We treat URLs as both spatial and sequential data simultaneously — CNN feature maps feed directly into LSTM input gates.',
-        icon: Lightbulb,
-        color: '#FFB347',
-    },
-    {
-        title: 'Zero-Day Generalization',
-        desc: 'Achieves 94%+ generalization on entirely unseen phishing campaigns without retraining — true zero-day adaptability.',
-        icon: TrendingUp,
-        color: '#00FFB2',
-    },
-    {
-        title: 'Reduced False Positives',
-        desc: 'Deep lexical context extraction reduced the false positive rate from the industry standard 3.2% down to 0.5%.',
-        icon: SearchCheck,
+        title: 'Hybrid Fusion',
+        desc: 'Structural + semantic intelligence combined.',
+        icon: GitMerge,
         color: '#00AEEF',
     },
     {
-        title: 'Sub-100ms Inference',
-        desc: 'Post-training dropout pruning condensed model parameters — full inference in under 12ms per URL on standard CPU hardware.',
+        title: 'RoBERTa NLP',
+        desc: 'Context-aware phishing understanding.',
+        icon: Sparkles,
+        color: '#FFB347',
+    },
+    {
+        title: '1.53M Dataset',
+        desc: 'Large balanced phishing corpus.',
+        icon: Database,
+        color: '#00FFB2',
+    },
+    {
+        title: '215 ms Inference',
+        desc: 'Production-grade real-time detection.',
         icon: Zap,
         color: '#7C3AED',
     },
@@ -50,7 +50,7 @@ const ResearchSection: React.FC = () => {
                             <span className="text-gradient-blue">Deep Learning</span>
                         </h2>
                         <p className="text-gray-400 text-lg leading-relaxed">
-                            This project isn't just an implementation of existing models. We engineered a highly optimized spatial-temporal extraction pipeline tailored specifically for URL character sequence analysis — achieving results beyond the current state of the art.
+                            This research engineers a dual-stream spatial-temporal and transformer extraction framework tailored specifically for zero-day phishing URL analysis — achieving 95.17% generalization across 1.53M real-world URLs.
                         </p>
                         <a href="#"
                             className="inline-flex items-center gap-2 w-fit px-6 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300"

@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 
 const techStack = [
     { name: 'Python', category: 'Backend / ML', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg', color: '#3B82F6' },
+    { name: 'PyTorch', category: 'Deep Learning', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original.svg', color: '#EE4C2C' },
+    { name: 'Transformers', category: 'Hugging Face', logo: 'https://huggingface.co/front/assets/huggingface_logo-noborder.svg', color: '#FFD21E' },
+    { name: 'RoBERTa', category: 'Transformer NLP', logo: 'https://huggingface.co/front/assets/huggingface_logo-noborder.svg', color: '#FACC15' },
     { name: 'TensorFlow', category: 'Deep Learning', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tensorflow/tensorflow-original.svg', color: '#FF6B35' },
     { name: 'Keras', category: 'Neural Networks', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Keras_logo.svg', color: '#FF3B3B' },
     { name: 'Flask', category: 'API Server', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg', color: '#9CA3AF', invert: true },

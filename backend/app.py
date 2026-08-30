@@ -10,7 +10,6 @@ import threading
 import time
 from collections import deque
 
-import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS'] = '1'
@@ -51,9 +50,6 @@ def health():
         "timestamp": int(time.time())
     }), 200
 
-# =========================================
-# GLOBAL STATISTICS TRACKING
-# =========================================
 # =========================================
 # GLOBAL STATISTICS & THREAT TRACKING
 # =========================================

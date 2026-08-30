@@ -1,9 +1,5 @@
-[build]
-builder = "NIXPACKS"
-buildCommand = "if [ -d \"backend\" ]; then cd backend; fi && pip install --upgrade pip && pip install -r requirements.txt"
-
 [deploy]
-startCommand = "if [ -d \"backend\" ]; then cd backend; fi && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120"
+startCommand = "cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

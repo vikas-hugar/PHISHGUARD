@@ -42,6 +42,15 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 def index():
     return jsonify({"status": "Backend is running", "message": "PhishGuard API is active"})
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "healthy",
+        "service": "PhishGuard AI V3",
+        "model": "Hybrid CNN-BiLSTM + RoBERTa",
+        "timestamp": int(time.time())
+    }), 200
+
 # =========================================
 # GLOBAL STATISTICS TRACKING
 # =========================================

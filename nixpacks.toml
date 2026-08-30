@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python310"]
+
+[phases.install]
+cmds = ["if [ -d \"backend\" ]; then cd backend; fi && pip install --upgrade pip && pip install -r requirements.txt"]
+
+[start]
+cmd = "if [ -d \"backend\" ]; then cd backend; fi && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120"

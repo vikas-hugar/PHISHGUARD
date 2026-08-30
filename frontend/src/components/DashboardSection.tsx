@@ -110,7 +110,7 @@ const DashboardSection: React.FC = () => {
             try {
                 const endpoint = import.meta.env.VITE_API_URL 
                     ? `${import.meta.env.VITE_API_URL}/stats` 
-                    : 'http://127.0.0.1:5000/stats';
+                    : 'https://phishguard-production-59e7.up.railway.app/stats';
                 
                 const res = await fetch(endpoint);
                 if (!res.ok) throw new Error("Failed to fetch live stats");

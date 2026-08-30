@@ -172,7 +172,7 @@ const DemoSection: React.FC = () => {
         try {
             const endpoint = import.meta.env.VITE_API_URL 
                 ? `${import.meta.env.VITE_API_URL}/predict` 
-                : 'http://127.0.0.1:5000/predict';
+                : 'https://phishguard-production-59e7.up.railway.app/predict';
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 20000);

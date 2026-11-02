@@ -1,0 +1,23 @@
+# PhishGuard AI — Analysis VM Agent Requirements
+# ================================================
+# Install these inside the VirtualBox Linux guest ONLY.
+# Do NOT install this on the Windows host.
+#
+# Minimum Python version: 3.10
+#
+# Install command (inside VM):
+#   pip install -r requirements.txt
+#   playwright install chromium
+#   playwright install-deps chromium    # installs system deps on Debian/Ubuntu
+
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Playwright async browser automation
+playwright>=1.44.0
+
+# Image processing (for screenshot analysis)
+Pillow>=10.0.0
+
+# Local OCR inside VM
+pytesseract>=0.3.10

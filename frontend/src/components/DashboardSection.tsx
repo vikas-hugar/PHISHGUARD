@@ -5,7 +5,8 @@ import {
 } from 'recharts';
 import {
     Activity, ShieldAlert, ShieldCheck, Zap, Clock,
-    TrendingUp, AlertTriangle, AlertCircle, Cpu, Globe, ArrowUpRight
+    TrendingUp, AlertTriangle, AlertCircle, Cpu, Globe, ArrowUpRight,
+    Database, Lock
 } from 'lucide-react';
 
 // ── Mock initial threat timeline data ──
@@ -21,13 +22,13 @@ const INITIAL_TIMELINE = [
 
 // ── Initial Mock Scans with Enterprise Threat Levels ──
 const INITIAL_SCANS = [
-    { url: 'paypal-security-update.com/login', threat: 'Critical' as const, risk: 97, latency: 34.2, time: '1m ago' },
-    { url: 'github.com/microsoft/vscode', threat: 'Safe' as const, risk: 4, latency: 28.5, time: '3m ago' },
-    { url: 'netflix-billing-verify.xyz/account', threat: 'High' as const, risk: 78, latency: 38.1, time: '5m ago' },
-    { url: 'amazon.com/orders/tracking', threat: 'Safe' as const, risk: 2, latency: 26.4, time: '9m ago' },
-    { url: 'secure-bank-token-auth.info', threat: 'Medium' as const, risk: 52, latency: 41.0, time: '12m ago' },
-    { url: 'appleid-support-icloud.biz/session', threat: 'Critical' as const, risk: 96, latency: 32.8, time: '16m ago' },
-    { url: 'docs.google.com/document/d/edit', threat: 'Safe' as const, risk: 1, latency: 25.1, time: '20m ago' },
+    { url: 'paypal-security-update.com/login', threat: 'Critical' as const, attack_type: 'Known Phishing', risk: 97, latency: 34.2, time: '1m ago' },
+    { url: 'github.com/microsoft/vscode', threat: 'Safe' as const, attack_type: 'Legitimate', risk: 4, latency: 28.5, time: '3m ago' },
+    { url: 'netflix-billing-verify.xyz/account', threat: 'High' as const, attack_type: 'Zero-Day Phishing', risk: 78, latency: 38.1, time: '5m ago' },
+    { url: 'amazon.com/orders/tracking', threat: 'Safe' as const, attack_type: 'Legitimate', risk: 2, latency: 26.4, time: '9m ago' },
+    { url: 'secure-bank-token-auth.info', threat: 'Medium' as const, attack_type: 'Suspicious', risk: 52, latency: 41.0, time: '12m ago' },
+    { url: 'appleid-support-icloud.biz/session', threat: 'Critical' as const, attack_type: 'Known Phishing', risk: 96, latency: 32.8, time: '16m ago' },
+    { url: 'docs.google.com/document/d/edit', threat: 'Safe' as const, attack_type: 'Legitimate', risk: 1, latency: 25.1, time: '20m ago' },
 ];
 
 // ── Real Model Performance Metrics (Hybrid AI V3) ──
@@ -102,21 +103,25 @@ const DashboardSection: React.FC = () => {
         critical: 137,
         avgScanTimeMs: 215.0,
         highestRisk: 98,
-        totalDomainsScanned: 684
+        totalDomainsScanned: 684,
+        known_phishing: 194,
+        zero_day_phishing: 158,
+        repository_known_urls: 816899,
+        repository_domains: 472462,
     });
 
     useEffect(() => {
         const fetchGlobalStats = async () => {
             try {
-                const endpoint = import.meta.env.VITE_API_URL 
-                    ? `${import.meta.env.VITE_API_URL}/stats` 
-                    : 'https://phishguard-production-59e7.up.railway.app/stats';
-                
+                const endpoint = import.meta.env.VITE_API_URL
+                    ? `${import.meta.env.VITE_API_URL}/stats`
+                    : 'http://localhost:5000/stats';
+
                 const res = await fetch(endpoint);
-                if (!res.ok) throw new Error("Failed to fetch live stats");
-                
+                if (!res.ok) throw new Error('Failed to fetch live stats');
+
                 const data = await res.json();
-                
+
                 if (data.history && data.history.length > 0) {
                     const mappedHistory = data.history.map((h: any) => {
                         const risk = h.risk_score !== undefined ? h.risk_score : (h.result === 'Safe' ? 5 : 90);
@@ -125,13 +130,13 @@ const DashboardSection: React.FC = () => {
                         else if (risk >= 85) threat = 'Critical';
                         else if (risk >= 60) threat = 'High';
                         else if (risk >= 30) threat = 'Medium';
-
                         return {
                             url: h.url,
                             threat,
+                            attack_type: h.attack_type || (threat === 'Safe' ? 'Legitimate' : 'Zero-Day Phishing'),
                             risk,
-                            latency: h.latency || 215.0,
-                            time: h.time || 'just now'
+                            latency: h.detection_time_ms || h.latency || 42.0,
+                            time: 'just now',
                         };
                     });
                     const merged = [...mappedHistory, ...INITIAL_SCANS].slice(0, 7);
@@ -140,19 +145,23 @@ const DashboardSection: React.FC = () => {
 
                 if (data.stats && data.stats.total > 0) {
                     const st = data.stats;
-                    setLiveStats({
+                    setLiveStats(prev => ({
                         total: st.total,
                         safe: st.safe || 0,
                         medium: st.medium || st.suspicious || 0,
                         high: st.high || 0,
-                        critical: st.critical || st.phishing || 0,
-                        avgScanTimeMs: st.avgScanTimeMs || 215.0,
+                        critical: st.critical || 0,
+                        avgScanTimeMs: st.avgScanTimeMs || 42.0,
                         highestRisk: st.highestRisk || 98,
-                        totalDomainsScanned: st.totalDomainsScanned || Math.round(st.total * 0.65)
-                    });
+                        totalDomainsScanned: st.totalDomainsScanned || Math.round(st.total * 0.65),
+                        known_phishing: st.known_phishing || prev.known_phishing,
+                        zero_day_phishing: st.zero_day_phishing || prev.zero_day_phishing,
+                        repository_known_urls: st.repository_known_urls || prev.repository_known_urls,
+                        repository_domains: st.repository_domains || prev.repository_domains,
+                    }));
                 }
             } catch (err) {
-                // Silently fallback to initial live mock
+                // Silently fallback to mock
             }
         };
 
@@ -186,41 +195,61 @@ const DashboardSection: React.FC = () => {
                     viewport={{ once: true }}
                     className="text-center mb-16"
                 >
-                    <div className="section-label mb-6 mx-auto">Enterprise Threat Center</div>
+                    <div className="section-label mb-6 mx-auto">Enterprise SOC Intelligence Center</div>
                     <h2 className="text-4xl md:text-5xl font-bold mb-5">
-                        SOC Hybrid Threat <span className="text-gradient-blue">Intelligence Dashboard</span>
+                        PhishGuard AI V4 <span className="text-gradient-blue">Threat Intelligence Dashboard</span>
                     </h2>
                     <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                        Live telemetry, real-time threat timelines, risk severity distributions, and Hybrid CNN–BiLSTM + RoBERTa model metrics.
+                        Offline Global Repository (816K+ URLs) + Hybrid CNN–BiLSTM + RoBERTa. Real-time Known Phishing vs Zero-Day classification.
                     </p>
                 </motion.div>
 
-                {/* ── Row 1: Key Telemetry Counters ── */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                {/* ── Row 1: Key Telemetry Counters (V4 — 8 cards) ── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-4">
                     {[
                         { icon: Activity, label: 'Total URLs Scanned', end: liveStats.total, suffix: '', color: '#00AEEF' },
-                        { icon: Globe, label: 'Domains Inspected', end: liveStats.totalDomainsScanned, suffix: '', color: '#38BDF8' },
-                        { icon: Clock, label: 'Avg Scan Latency', end: Math.round(liveStats.avgScanTimeMs || 215), suffix: ' ms', color: '#00FFB2' },
-                        { icon: AlertTriangle, label: 'Peak Risk Score', end: liveStats.highestRisk || 98, suffix: '/100', color: '#FF3B3B' },
-                        { icon: ShieldCheck, label: 'Safe Verified', end: liveStats.safe, suffix: '', color: '#00FFB2' },
-                        { icon: ShieldAlert, label: 'Threats Neutralized', end: liveStats.high + liveStats.critical, suffix: '', color: '#FB923C' },
+                        { icon: ShieldCheck, label: 'Legitimate URLs', end: liveStats.safe, suffix: '', color: '#00FFB2' },
+                        { icon: Lock, label: 'Known Phishing', end: liveStats.known_phishing, suffix: '', color: '#FF3B3B' },
+                        { icon: Zap, label: 'Zero-Day Phishing', end: liveStats.zero_day_phishing, suffix: '', color: '#FF6B35' },
                     ].map((stat, i) => {
                         const Icon = stat.icon;
                         return (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.06 }}
-                                className="stat-card group"
-                            >
+                            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }} transition={{ delay: i * 0.06 }} className="stat-card group">
                                 <div className="flex items-center justify-between mb-2.5">
                                     <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                                         style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}30` }}>
                                         <Icon className="w-4 h-4" style={{ color: stat.color }} />
                                     </div>
                                     <ArrowUpRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-400 transition-colors" />
+                                </div>
+                                <div className="text-2xl font-black text-white">
+                                    <AnimatedCounter end={stat.end} suffix={stat.suffix} />
+                                </div>
+                                <div className="text-[11px] text-gray-400 mt-1">{stat.label}</div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* ── Row 1b: Repository Intelligence Cards ── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    {[
+                        { icon: Database, label: 'Known URLs in Repository', end: liveStats.repository_known_urls, suffix: '', color: '#7C3AED' },
+                        { icon: Globe, label: 'Repository Domains', end: liveStats.repository_domains, suffix: '', color: '#8B5CF6' },
+                        { icon: Clock, label: 'Avg Scan Latency', end: Math.round(liveStats.avgScanTimeMs || 42), suffix: ' ms', color: '#00FFB2' },
+                        { icon: AlertTriangle, label: 'Peak Risk Score', end: liveStats.highestRisk || 98, suffix: '/100', color: '#FB923C' },
+                    ].map((stat, i) => {
+                        const Icon = stat.icon;
+                        return (
+                            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }} transition={{ delay: i * 0.06 + 0.2 }} className="stat-card group">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                                        style={{ background: `${stat.color}15`, border: `1px solid ${stat.color}30` }}>
+                                        <Icon className="w-4 h-4" style={{ color: stat.color }} />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-gray-600 group-hover:text-gray-400">OFFLINE</span>
                                 </div>
                                 <div className="text-2xl font-black text-white">
                                     <AnimatedCounter end={stat.end} suffix={stat.suffix} />
@@ -388,17 +417,16 @@ const DashboardSection: React.FC = () => {
                         {recentScans.map((scan, i) => {
                             const badge = getBadgeStyles(scan.threat);
                             const Icon = badge.icon;
+                            const atColor = (scan as any).attack_type === 'Known Phishing' ? '#FF3B3B'
+                                : (scan as any).attack_type === 'Zero-Day Phishing' ? '#FF6B35'
+                                : (scan as any).attack_type === 'Suspicious' ? '#FACC15'
+                                : '#00FFB2';
                             return (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, x: 10 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.04 }}
+                                <motion.div key={i} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }} transition={{ delay: i * 0.04 }}
                                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl transition-all duration-200 hover:bg-white/5"
                                     style={{ border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.015)' }}
                                 >
-                                    {/* Left: Icon & URL */}
                                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                                         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                                             style={{ background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color }}>
@@ -408,23 +436,23 @@ const DashboardSection: React.FC = () => {
                                             <p className="text-xs md:text-sm font-mono text-gray-200 truncate">{scan.url}</p>
                                         </div>
                                     </div>
-
-                                    {/* Right: Threat badge, Risk, Latency, Time */}
-                                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+                                        {/* V4: Attack Type badge */}
+                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
+                                            style={{ background: `${atColor}15`, border: `1px solid ${atColor}30`, color: atColor }}>
+                                            {(scan as any).attack_type || scan.threat}
+                                        </span>
                                         <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-md"
                                             style={{ background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color }}>
                                             {scan.threat.toUpperCase()}
                                         </span>
                                         <div className="text-xs font-mono font-bold" style={{ color: badge.color }}>
-                                            {scan.risk}/100 Risk
+                                            {scan.risk}/100
                                         </div>
                                         <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
-                                            <Zap className="w-3 h-3 text-secondary" />
-                                            {scan.latency} ms
+                                            <Zap className="w-3 h-3 text-secondary" />{scan.latency} ms
                                         </div>
-                                        <div className="text-xs text-gray-500 font-mono hidden md:block">
-                                            {scan.time}
-                                        </div>
+                                        <div className="text-xs text-gray-500 font-mono hidden md:block">{scan.time}</div>
                                     </div>
                                 </motion.div>
                             );

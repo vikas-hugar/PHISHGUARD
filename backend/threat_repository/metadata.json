@@ -1,0 +1,15 @@
+{
+  "known_urls": 816899,
+  "domains": 472462,
+  "generated_on": "2026-09-28",
+  "generated_at": "2026-09-28 18:01 UTC",
+  "build_time_seconds": 80.58,
+  "version": "Global Threat Repository V4",
+  "feeds_used": [
+    "OpenPhish Community Feed",
+    "PhishTank (CSV verified)",
+    "URLHaus Phishing",
+    "Phishing.Database (GH raw)",
+    "SecureReapir Phishing DB"
+  ]
+}

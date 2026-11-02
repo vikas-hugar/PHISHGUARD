@@ -1,0 +1,17 @@
+{
+  "known_urls": 2127443,
+  "domains": 981522,
+  "brands": 1024,
+  "version": "PhishGuard AI V5 Enterprise Threat Intelligence",
+  "generated_on": "2026",
+  "generated_at": "2026-09-29 00:00 UTC",
+  "storage_type": "Dual SQLite B-Tree Index (O(log N))",
+  "status": "Operational Offline",
+  "feeds": [
+    "OpenPhish Global Community Feed",
+    "PhishTank Verified Intelligence",
+    "URLHaus Malware/Phishing Feed",
+    "Phishing.Database High-Risk Tracker",
+    "APWG Global Phishing Dataset"
+  ]
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Menu, X, ScanLine, BarChart2 } from 'lucide-react';
+import { Shield, Menu, X, ScanLine, BarChart2, FileText } from 'lucide-react';
 
 const navLinks = [
     { label: 'Home', href: '#' },
@@ -77,6 +77,17 @@ const Navbar: React.FC = () => {
 
                         {/* Right side actions */}
                         <div className="hidden lg:flex items-center gap-3">
+                            <a
+                                href="/PhishGuard_AI_V7_Project_Expo_Banner_Guide.pdf"
+                                download="PhishGuard_AI_V7_Project_Expo_Banner_Guide.pdf"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all duration-300 text-sky-400 border border-sky-500/30 hover:bg-sky-500/10"
+                                title="Download the 13-page Project Expo Banner & Defense Guide PDF"
+                            >
+                                <FileText className="w-3.5 h-3.5" />
+                                Expo Guide PDF
+                            </a>
                             <a
                                 href="#demo"
                                 className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl transition-all duration-300"

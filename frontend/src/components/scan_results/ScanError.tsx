@@ -53,7 +53,7 @@ export const ScanError: React.FC<ScanErrorProps> = ({
                 <button
                     type="button"
                     onClick={onRetry}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors cursor-pointer"
                 >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Try again</span>

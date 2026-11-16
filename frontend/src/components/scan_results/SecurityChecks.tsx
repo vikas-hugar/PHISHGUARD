@@ -51,7 +51,7 @@ export const SecurityChecks: React.FC<SecurityChecksProps> = ({ onViewTechnicalD
                     <button
                         type="button"
                         onClick={onViewTechnicalDetails}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors cursor-pointer group"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 transition-colors cursor-pointer group"
                     >
                         <span>View technical analysis</span>
                         <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />

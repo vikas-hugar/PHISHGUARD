@@ -57,7 +57,7 @@ const ParticleCanvas: React.FC = () => {
 
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(0, 174, 239, ${p.opacity})`;
+                ctx.fillStyle = `rgba(239, 68, 68, ${p.opacity})`;
                 ctx.fill();
             }
 
@@ -72,7 +72,7 @@ const ParticleCanvas: React.FC = () => {
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(0, 174, 239, ${alpha})`;
+                        ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
                         ctx.lineWidth = 0.8;
                         ctx.stroke();
                     }
@@ -122,14 +122,14 @@ const HeroSection = () => {
 
                 {/* Radial hero glow from top */}
                 <div className="absolute inset-0" style={{
-                    background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,174,239,0.15) 0%, transparent 65%)'
+                    background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(239,68,68,0.18) 0%, transparent 65%)'
                 }} />
 
                 {/* Animated orbs */}
                 <div className="absolute top-1/4 -left-20 w-[500px] h-[500px] rounded-full animate-blob animation-delay-2000"
-                    style={{ background: 'radial-gradient(circle, rgba(0,174,239,0.12) 0%, transparent 70%)' }} />
+                    style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)' }} />
                 <div className="absolute bottom-1/4 -right-20 w-[400px] h-[400px] rounded-full animate-blob animation-delay-4000"
-                    style={{ background: 'radial-gradient(circle, rgba(0,255,178,0.1) 0%, transparent 70%)' }} />
+                    style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.12) 0%, transparent 70%)' }} />
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
@@ -149,9 +149,9 @@ const HeroSection = () => {
                             transition={{ delay: 0.15, duration: 0.6 }}
                             className="inline-flex items-center gap-2.5 w-fit rounded-full px-4 py-2"
                             style={{
-                                border: '1px solid rgba(0,174,239,0.4)',
-                                background: 'rgba(0,174,239,0.08)',
-                                boxShadow: '0 0 20px rgba(0,174,239,0.15)',
+                                border: '1px solid rgba(239,68,68,0.4)',
+                                background: 'rgba(239,68,68,0.08)',
+                                boxShadow: '0 0 20px rgba(239,68,68,0.2)',
                             }}
                         >
                             <span className="relative flex h-2.5 w-2.5">
@@ -172,7 +172,7 @@ const HeroSection = () => {
                         >
                             Detect Phishing<br />
                             <span className="bg-clip-text text-transparent"
-                                style={{ backgroundImage: 'linear-gradient(135deg, #00AEEF 0%, #00FFB2 100%)' }}>
+                                style={{ backgroundImage: 'linear-gradient(135deg, #EF4444 0%, #F43F5E 50%, #FB7185 100%)' }}>
                                 Before It Strikes
                             </span>
                         </motion.h1>
@@ -238,14 +238,14 @@ const HeroSection = () => {
                             <div className="relative w-full rounded-2xl p-6 overflow-hidden"
                                 style={{
                                     background: 'rgba(10,15,44,0.75)',
-                                    border: '1px solid rgba(0,174,239,0.25)',
+                                    border: '1px solid rgba(239,68,68,0.25)',
                                     backdropFilter: 'blur(24px)',
-                                    boxShadow: '0 0 60px rgba(0,174,239,0.12), 0 30px 60px rgba(0,0,0,0.5)',
+                                    boxShadow: '0 0 60px rgba(239,68,68,0.15), 0 30px 60px rgba(0,0,0,0.5)',
                                 }}>
 
                             {/* Top accent line */}
                             <div className="absolute top-0 left-0 w-full h-px"
-                                style={{ background: 'linear-gradient(90deg, transparent, #00AEEF, #00FFB2, transparent)' }} />
+                                style={{ background: 'linear-gradient(90deg, transparent, #EF4444, #F43F5E, transparent)' }} />
 
                             {/* Header */}
                             <div className="flex justify-between items-center mb-6">
@@ -318,7 +318,7 @@ const HeroSection = () => {
                                         <div className="absolute inset-2 rounded-full border border-primary/10" />
                                         <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-radar-spin"
                                             style={{
-                                                background: 'conic-gradient(rgba(0,174,239,0.15) 0deg, transparent 90deg)',
+                                                background: 'conic-gradient(rgba(239,68,68,0.2) 0deg, transparent 90deg)',
                                             }} />
                                         <Activity className="w-4 h-4 text-primary relative z-10" />
                                     </div>
@@ -346,10 +346,10 @@ const HeroSection = () => {
                                 className="absolute -right-4 -top-4 px-3 py-2 rounded-xl text-xs font-bold z-20"
                                 style={{
                                     background: 'rgba(10,15,44,0.9)',
-                                    border: '1px solid rgba(0,174,239,0.35)',
+                                    border: '1px solid rgba(239,68,68,0.35)',
                                     backdropFilter: 'blur(12px)',
-                                    boxShadow: '0 0 20px rgba(0,174,239,0.2)',
-                                    color: '#00AEEF',
+                                    boxShadow: '0 0 20px rgba(239,68,68,0.25)',
+                                    color: '#EF4444',
                                 }}
                             >
                                 95.17% Test Accuracy

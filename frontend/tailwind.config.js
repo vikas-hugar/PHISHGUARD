@@ -13,31 +13,31 @@ export default {
                 surface: '#0A0F2C',
                 'surface-light': '#0F1640',
                 // Brand accents
-                primary: '#00AEEF',       // Electric blue
+                primary: '#EF4444',       // Crimson red
                 secondary: '#00FFB2',     // Cyan-green neon
-                accent: '#0077CC',        // Deep blue accent
+                accent: '#DC2626',        // Deep red accent
                 // Status colors
                 dangerous: '#FF3B3B',
                 warning: '#FFB347',
                 success: '#00FFB2',
                 // Utility
-                'border-glow': '#00AEEF33',
+                'border-glow': '#EF444433',
             },
             fontFamily: {
                 sans: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
                 mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
             },
             boxShadow: {
-                'glow-blue': '0 0 20px rgba(0, 174, 239, 0.35), 0 0 60px rgba(0, 174, 239, 0.1)',
+                'glow-blue': '0 0 20px rgba(239, 68, 68, 0.35), 0 0 60px rgba(239, 68, 68, 0.1)',
                 'glow-green': '0 0 20px rgba(0, 255, 178, 0.35), 0 0 60px rgba(0, 255, 178, 0.1)',
                 'glow-red': '0 0 20px rgba(255, 59, 59, 0.35), 0 0 60px rgba(255, 59, 59, 0.1)',
                 'glow-amber': '0 0 20px rgba(255, 179, 71, 0.35), 0 0 60px rgba(255, 179, 71, 0.1)',
                 'card': '0 4px 24px 0 rgba(0,0,0,0.5)',
             },
             backgroundImage: {
-                'grid-pattern': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='%2300AEEF' stroke-width='0.3' stroke-opacity='0.12'/%3E%3C/svg%3E\")",
+                'grid-pattern': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='%23EF4444' stroke-width='0.3' stroke-opacity='0.12'/%3E%3C/svg%3E\")",
                 'radial-navy': 'radial-gradient(ellipse at center, #0A0F2C 0%, #060B18 70%)',
-                'hero-gradient': 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,174,239,0.18) 0%, transparent 60%)',
+                'hero-gradient': 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(239,68,68,0.18) 0%, transparent 60%)',
             },
             animation: {
                 'blob': 'blob 8s ease-in-out infinite',
@@ -65,8 +65,8 @@ export default {
                     '50%': { transform: 'translateY(-16px)' },
                 },
                 glowPulse: {
-                    '0%, 100%': { opacity: '1', boxShadow: '0 0 20px rgba(0,174,239,0.4)' },
-                    '50%': { opacity: '0.7', boxShadow: '0 0 40px rgba(0,174,239,0.8), 0 0 80px rgba(0,174,239,0.3)' },
+                    '0%, 100%': { opacity: '1', boxShadow: '0 0 20px rgba(239,68,68,0.4)' },
+                    '50%': { opacity: '0.7', boxShadow: '0 0 40px rgba(239,68,68,0.8), 0 0 80px rgba(239,68,68,0.3)' },
                 },
                 radarSpin: {
                     '0%': { transform: 'rotate(0deg)' },

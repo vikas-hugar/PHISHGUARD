@@ -51,7 +51,7 @@ export const SafeWebViewCard: React.FC<SafeWebViewCardProps> = ({
                         <button
                             type="button"
                             onClick={() => setIsOpen(!isOpen)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-all cursor-pointer shadow-sm"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-all cursor-pointer shadow-sm"
                         >
                             <Eye className="w-3.5 h-3.5" />
                             <span>{isOpen ? 'Close Safe Web View' : 'Open Safe Web View'}</span>

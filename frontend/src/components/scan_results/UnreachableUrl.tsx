@@ -136,7 +136,7 @@ export const UnreachableUrl: React.FC<UnreachableUrlProps> = ({
                 {/* Critical Security Policy Notice */}
                 <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2.5">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-200 tracking-wide uppercase">
-                        <Shield className="w-4 h-4 text-blue-400" />
+                        <Shield className="w-4 h-4 text-red-400" />
                         <span>PhishGuard Security Policy: Unreachable ≠ Safe</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
@@ -153,7 +153,7 @@ export const UnreachableUrl: React.FC<UnreachableUrlProps> = ({
                 <button
                     type="button"
                     onClick={onReset}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-all shadow-lg shadow-red-600/20 cursor-pointer"
                 >
                     <Search className="w-4 h-4" />
                     <span>Try Another URL</span>

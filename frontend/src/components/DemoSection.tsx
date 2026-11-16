@@ -411,13 +411,13 @@ const RadarScan: React.FC<{ isDeepScan?: boolean }> = ({ isDeepScan }) => (
                 style={{
                     background: isDeepScan
                         ? 'conic-gradient(rgba(168,85,247,0.45) 0deg, transparent 90deg)'
-                        : 'conic-gradient(rgba(0,174,239,0.4) 0deg, transparent 90deg)'
+                        : 'conic-gradient(rgba(239,68,68,0.4) 0deg, transparent 90deg)'
                 }}
             />
         </div>
         <div
             className={`relative z-10 w-3.5 h-3.5 rounded-full ${isDeepScan ? 'bg-purple-500' : 'bg-primary'} animate-ping`}
-            style={{ boxShadow: isDeepScan ? '0 0 14px #A855F7' : '0 0 14px #00AEEF' }}
+            style={{ boxShadow: isDeepScan ? '0 0 14px #A855F7' : '0 0 14px #EF4444' }}
         />
     </div>
 );
@@ -777,13 +777,13 @@ const DemoSection: React.FC = () => {
     return (
         <section id="demo" className="py-16 sm:py-24 relative bg-slate-950 font-sans overflow-hidden">
             {/* Subtle atmospheric ambient glow */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[20rem] bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[20rem] bg-gradient-to-tr from-rose-500/15 via-red-600/12 to-amber-600/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 relative z-10 space-y-7">
                 {/* Section Header — Human, Warm, Aesthetic */}
                 <div className="text-center space-y-3">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shadow-sm backdrop-blur-md">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-red-400" />
                         <span className="font-medium tracking-wide">Intelligent Link Inspector</span>
                     </div>
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
@@ -797,12 +797,12 @@ const DemoSection: React.FC = () => {
                 {/* Main Card — Handcrafted Aesthetic Design */}
                 <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-slate-900/90 via-slate-900/70 to-slate-950/90 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)_inset] backdrop-blur-2xl space-y-5 overflow-hidden">
                     {/* Top ambient highlight line */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/40 to-transparent pointer-events-none" />
 
                     {/* URL Input Form — The Handcrafted Centerpiece */}
                     <form onSubmit={handleScan} className="relative z-10 pt-1">
-                        <div className="relative group rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-slate-700 focus-within:border-cyan-500/60 focus-within:ring-4 focus-within:ring-cyan-500/10 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.45),0_1px_2px_rgba(255,255,255,0.04)_inset] flex items-center p-1.5 sm:p-2">
-                            <div className="pl-3 sm:pl-3.5 pr-2 text-slate-500 group-focus-within:text-cyan-400 transition-colors shrink-0">
+                        <div className="relative group rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-slate-700 focus-within:border-red-500/60 focus-within:ring-4 focus-within:ring-red-500/10 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.45),0_1px_2px_rgba(255,255,255,0.04)_inset] flex items-center p-1.5 sm:p-2">
+                            <div className="pl-3 sm:pl-3.5 pr-2 text-slate-500 group-focus-within:text-red-400 transition-colors shrink-0">
                                 <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                             <input
@@ -829,7 +829,7 @@ const DemoSection: React.FC = () => {
                                     id="scan-button"
                                     type="submit"
                                     disabled={scanStatus === 'scanning' || !url.trim()}
-                                    className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.98] transition-all duration-200 flex items-center gap-2 shadow-[0_2px_14px_rgba(6,182,212,0.35)] disabled:opacity-40 disabled:hover:from-cyan-500 disabled:hover:to-blue-600 disabled:shadow-none cursor-pointer shrink-0"
+                                    className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 active:scale-[0.98] transition-all duration-200 flex items-center gap-2 shadow-[0_2px_14px_rgba(239,68,68,0.35)] disabled:opacity-40 disabled:hover:from-red-500 disabled:hover:to-rose-600 disabled:shadow-none cursor-pointer shrink-0"
                                 >
                                     {scanStatus === 'scanning' ? (
                                         <>
@@ -872,7 +872,7 @@ const DemoSection: React.FC = () => {
                         </span>
                         <span className="hidden sm:inline text-slate-700">•</span>
                         <span className="inline-flex items-center gap-1.5">
-                            <Lock className="w-3 h-3 text-cyan-400" />
+                            <Lock className="w-3 h-3 text-red-400" />
                             <span>100% Isolated sandbox</span>
                         </span>
                         <span className="hidden sm:inline text-slate-700">•</span>

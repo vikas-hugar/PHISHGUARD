@@ -9,7 +9,7 @@ const techStack = [
     { name: 'TensorFlow', category: 'Deep Learning', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tensorflow/tensorflow-original.svg', color: '#FF6B35' },
     { name: 'Keras', category: 'Neural Networks', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Keras_logo.svg', color: '#FF3B3B' },
     { name: 'Flask', category: 'API Server', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg', color: '#9CA3AF', invert: true },
-    { name: 'React', category: 'Frontend UI', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', color: '#00AEEF' },
+    { name: 'React', category: 'Frontend UI', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', color: '#61DAFB' },
     { name: 'Tailwind CSS', category: 'Styling', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg', color: '#38BDF8' },
     { name: 'Recharts', category: 'Data Viz', logo: 'https://camo.githubusercontent.com/1cb6fc5e4a48c37a61fb5a51e0d3e1e6cda1516cd793e0cf14f34e4d069b9700/68747470733a2f2f7265636861727473732e636f6d2f696d616765732f6c6f676f2e706e67', color: '#7C3AED' },
     { name: 'Pandas', category: 'Data Processing', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pandas/pandas-original.svg', color: '#A78BFA' },

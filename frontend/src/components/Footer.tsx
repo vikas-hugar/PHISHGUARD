@@ -6,14 +6,14 @@ const Footer: React.FC = () => {
         <footer className="relative overflow-hidden pt-20 pb-10"
             style={{
                 background: '#040810',
-                borderTop: '1px solid rgba(0,174,239,0.12)',
+                borderTop: '1px solid rgba(239,68,68,0.12)',
             }}>
 
             {/* Top glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-px"
-                style={{ background: 'linear-gradient(90deg, transparent, rgba(0,174,239,0.5), rgba(0,255,178,0.3), transparent)' }} />
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(239,68,68,0.5), rgba(220,38,38,0.3), transparent)' }} />
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 pointer-events-none blur-3xl"
-                style={{ background: 'rgba(0,174,239,0.07)' }} />
+                style={{ background: 'rgba(239,68,68,0.07)' }} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
@@ -22,13 +22,13 @@ const Footer: React.FC = () => {
                     <div className="lg:col-span-2">
                         <div className="flex items-center gap-2.5 mb-5">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                                style={{ background: 'linear-gradient(135deg, #00AEEF, #0077CC)', boxShadow: '0 0 15px rgba(0,174,239,0.35)' }}>
+                                style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)', boxShadow: '0 0 15px rgba(239,68,68,0.35)' }}>
                                 <Shield className="w-5 h-5 text-white" />
                             </div>
                             <span className="text-lg font-bold text-white">
-                                Phish<span style={{ color: '#00AEEF' }}>Guard</span>
+                                Phish<span style={{ color: '#EF4444' }}>Guard</span>
                                 <span className="text-xs ml-1 font-semibold px-1.5 py-0.5 rounded"
-                                    style={{ background: 'rgba(0,174,239,0.15)', color: '#00AEEF', border: '1px solid rgba(0,174,239,0.3)' }}>AI</span>
+                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }}>AI</span>
                             </span>
                         </div>
                         <p className="text-gray-500 text-sm leading-relaxed max-w-sm mb-6">
@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
                                 <a key={i} href={href}
                                     className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 transition-all duration-200 hover:text-white"
                                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,174,239,0.4)'}
+                                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)'}
                                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'}
                                 >
                                     <Icon className="w-4 h-4" />
@@ -56,20 +56,20 @@ const Footer: React.FC = () => {
                         <a href="#demo"
                             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-300"
                             style={{
-                                background: 'linear-gradient(135deg, #00AEEF22, #00AEEF11)',
-                                border: '1px solid rgba(0,174,239,0.3)',
+                                background: 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(220,38,38,0.08))',
+                                border: '1px solid rgba(239,68,68,0.3)',
                             }}
                             onMouseEnter={e => {
-                                (e.currentTarget as HTMLElement).style.background = 'rgba(0,174,239,0.15)';
-                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,174,239,0.5)';
+                                (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.2)';
+                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.55)';
                             }}
                             onMouseLeave={e => {
-                                (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, #00AEEF22, #00AEEF11)';
-                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,174,239,0.3)';
+                                (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(220,38,38,0.08))';
+                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)';
                             }}
                         >
                             <ScanLine className="w-4 h-4 text-primary" />
-                            <span style={{ color: '#00AEEF' }}>Try URL Scanner</span>
+                            <span style={{ color: '#EF4444' }}>Try URL Scanner</span>
                         </a>
                     </div>
 
@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
                                     background: 'rgba(255,255,255,0.04)',
                                     border: '1px solid rgba(255,255,255,0.08)',
                                 }}
-                                onFocus={e => (e.target as HTMLElement).style.borderColor = 'rgba(0,174,239,0.4)'}
+                                onFocus={e => (e.target as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)'}
                                 onBlur={e => (e.target as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'}
                             />
                             <textarea
@@ -117,13 +117,13 @@ const Footer: React.FC = () => {
                                     background: 'rgba(255,255,255,0.04)',
                                     border: '1px solid rgba(255,255,255,0.08)',
                                 }}
-                                onFocus={e => (e.target as HTMLElement).style.borderColor = 'rgba(0,174,239,0.4)'}
+                                onFocus={e => (e.target as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)'}
                                 onBlur={e => (e.target as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'}
                             />
                             <button
                                 type="submit"
                                 className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-300"
-                                style={{ background: 'linear-gradient(135deg, #00AEEF, #0077CC)' }}
+                                style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)' }}
                             >
                                 Send Message <ArrowRight className="w-4 h-4" />
                             </button>

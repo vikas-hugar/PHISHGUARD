@@ -36,7 +36,7 @@ export const ScanProgress: React.FC<ScanProgressProps> = ({ url }) => {
     return (
         <div className="py-10 px-4 max-w-md mx-auto text-left space-y-6">
             <div className="text-center space-y-1">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 text-blue-400 mb-2">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-500/10 text-red-400 mb-2">
                     <Loader2 className="w-5 h-5 animate-spin" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-100">
@@ -53,7 +53,7 @@ export const ScanProgress: React.FC<ScanProgressProps> = ({ url }) => {
                     <span className="text-xs font-medium text-slate-400 block uppercase tracking-wider">
                         Inspection Stages
                     </span>
-                    <span className="text-[11px] font-mono text-blue-400">
+                    <span className="text-[11px] font-mono text-red-400">
                         {isReachabilityStage ? 'Stage 1: Pre-Scan Gate' : 'Stage 2: Full Analysis'}
                     </span>
                 </div>
@@ -71,8 +71,8 @@ export const ScanProgress: React.FC<ScanProgressProps> = ({ url }) => {
                                     </div>
                                 )}
                                 {isCurrent && (
-                                    <div className="w-4 h-4 rounded-full bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
+                                    <div className="w-4 h-4 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center shrink-0">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
                                     </div>
                                 )}
                                 {isPending && (

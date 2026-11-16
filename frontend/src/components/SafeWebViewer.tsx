@@ -1700,7 +1700,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             title="Reload Page"
                             aria-label="Reload"
                         >
-                            <RotateCw className={`w-3.5 h-3.5 ${isLoading || isNavigating ? 'animate-spin text-blue-400' : ''}`} />
+                            <RotateCw className={`w-3.5 h-3.5 ${isLoading || isNavigating ? 'animate-spin text-red-400' : ''}`} />
                         </button>
                     </div>
                 </div>
@@ -1748,7 +1748,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             type="button"
                             onClick={() => setViewerMode('screenshot')}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
-                                viewerMode === 'screenshot' ? 'bg-slate-800 text-blue-300 shadow-sm border border-blue-500/30' : 'text-slate-400 hover:text-white'
+                                viewerMode === 'screenshot' ? 'bg-slate-800 text-red-300 shadow-sm border border-red-500/30' : 'text-slate-400 hover:text-white'
                             }`}
                             title="Captured Screenshot"
                         >
@@ -1778,7 +1778,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             id="btn-exit-fullscreen"
                             type="button"
                             onClick={() => setIsFullscreen(false)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition-colors cursor-pointer shrink-0 shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-xs transition-colors cursor-pointer shrink-0 shadow-sm"
                             title="Exit Full Screen (Esc)"
                             aria-label="Exit full screen"
                         >
@@ -1930,7 +1930,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                     <div className="viewer-shell w-full h-full flex-1 flex flex-col min-w-0 overflow-hidden relative">
                         {isNavigating && (
                             <div className="h-0.5 w-full bg-slate-900 overflow-hidden shrink-0 z-10">
-                                <div className="h-full w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500 animate-pulse" />
+                                <div className="h-full w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 animate-pulse" />
                             </div>
                         )}
 
@@ -1955,15 +1955,15 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                         <div className="viewer-viewport flex-1 w-full h-full min-h-0 relative flex flex-col bg-white overflow-hidden">
                             {(isLoading && !pageDetail?.safe_html) ? (
                                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 min-h-[400px] bg-slate-950">
-                                    <div className="w-12 h-12 rounded-full border-2 border-slate-700 border-t-blue-500 animate-spin flex items-center justify-center">
-                                        <Globe className="w-5 h-5 text-blue-400 animate-pulse" />
+                                    <div className="w-12 h-12 rounded-full border-2 border-slate-700 border-t-red-500 animate-spin flex items-center justify-center">
+                                        <Globe className="w-5 h-5 text-red-400 animate-pulse" />
                                     </div>
                                     <div className="space-y-1 font-mono">
                                         <h4 className="text-sm font-semibold text-white">
                                             {isPrioritizing ? 'Prioritizing & Analyzing Page...' : 'Loading Page Representation'}
                                         </h4>
                                         <p className="text-xs text-slate-400 break-all">{currentDisplayUrl}</p>
-                                        <p className="text-[11px] text-blue-400">
+                                        <p className="text-[11px] text-red-400">
                                             {isPrioritizing ? 'Promoted to Priority 0 — processing immediately in sandbox...' : 'Status: Analyzing in isolated sandbox...'}
                                         </p>
                                     </div>
@@ -2072,12 +2072,12 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                                     />
                                     {screenshotB64 && viewerMode === 'visual' && (pageDetail?.content_inventory?.text_characters ?? 100) < 30 && (pageDetail?.content_inventory?.forms ?? 0) === 0 && (
                                         <div className="absolute bottom-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700 text-xs text-slate-200 px-3 py-2 rounded-lg shadow-xl flex items-center gap-2.5">
-                                            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                                            <Sparkles className="w-4 h-4 text-red-400 shrink-0" />
                                             <span>Minimal static markup. Sandbox screenshot available:</span>
                                             <button
                                                 type="button"
                                                 onClick={() => setViewerMode('screenshot')}
-                                                className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-[11px] rounded transition-all cursor-pointer"
+                                                className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white font-semibold text-[11px] rounded transition-all cursor-pointer"
                                             >
                                                 View Screenshot
                                             </button>
@@ -2252,7 +2252,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">Links</span>
-                                            <span className="text-base font-bold text-blue-400">
+                                            <span className="text-base font-bold text-red-400">
                                                 {pageDetail?.content_inventory?.links ?? 0}
                                             </span>
                                         </div>
@@ -2351,7 +2351,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                                             {selectedElement.href && (
                                                 <div className="space-y-0.5">
                                                     <span className="text-slate-500 block">Link Destination:</span>
-                                                    <span className="text-blue-300 break-all block bg-black/80 p-1.5 rounded border border-white/5">
+                                                    <span className="text-red-300 break-all block bg-black/80 p-1.5 rounded border border-white/5">
                                                         {selectedElement.href}
                                                     </span>
                                                 </div>

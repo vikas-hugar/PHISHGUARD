@@ -23,7 +23,7 @@ const DatasetSection: React.FC = () => {
             style={{ background: 'rgba(6,11,24,0.98)' }}>
             {/* BG decoration */}
             <div className="absolute top-0 right-0 w-1/2 h-3/4 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 100% 0%, rgba(0,174,239,0.06) 0%, transparent 60%)' }} />
+                style={{ background: 'radial-gradient(ellipse at 100% 0%, rgba(239,68,68,0.06) 0%, transparent 60%)' }} />
             <div className="absolute bottom-0 left-0 w-64 h-64 pointer-events-none"
                 style={{ background: 'radial-gradient(ellipse at 0% 100%, rgba(0,255,178,0.05) 0%, transparent 70%)' }} />
             <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
@@ -57,7 +57,7 @@ const DatasetSection: React.FC = () => {
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             className="glass-surface rounded-2xl p-6"
-                            style={{ border: '1px solid rgba(0,174,239,0.12)' }}
+                            style={{ border: '1px solid rgba(239,68,68,0.12)' }}
                         >
                             <h3 className="font-bold text-white mb-5 flex items-center gap-2 text-sm">
                                 <Database className="w-4 h-4 text-primary" />
@@ -74,7 +74,7 @@ const DatasetSection: React.FC = () => {
                                             ))}
                                         </Pie>
                                         <Tooltip
-                                            contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(0,174,239,0.2)', borderRadius: 8, fontSize: 11 }}
+                                            contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 11 }}
                                             formatter={(v: any, n: any) => [`${v}%`, n]}
                                         />
                                     </PieChart>
@@ -85,7 +85,7 @@ const DatasetSection: React.FC = () => {
                                     { label: 'Total Samples', value: '1,532,239', color: '#fff' },
                                     { label: 'Legitimate URLs', value: '811,621', color: '#00FFB2' },
                                     { label: 'Phishing URLs', value: '720,618', color: '#FF3B3B' },
-                                    { label: 'Train / Validation', value: '80% / 20%', color: '#00AEEF' },
+                                    { label: 'Train / Validation', value: '80% / 20%', color: '#EF4444' },
                                     { label: 'Architecture', value: 'Hybrid V3', color: '#FFB347' },
                                 ].map((row, i) => (
                                     <div key={i} className="flex justify-between py-2"
@@ -104,7 +104,7 @@ const DatasetSection: React.FC = () => {
                             viewport={{ once: true }}
                             transition={{ delay: 0.15 }}
                             className="glass-surface rounded-2xl p-6"
-                            style={{ border: '1px solid rgba(0,174,239,0.12)' }}
+                            style={{ border: '1px solid rgba(239,68,68,0.12)' }}
                         >
                             <h3 className="font-bold text-white mb-5 flex items-center gap-2 text-sm">
                                 <Settings className="w-4 h-4 text-secondary" />
@@ -113,7 +113,7 @@ const DatasetSection: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { value: '95.17%', label: 'Accuracy', color: '#00FFB2' },
-                                    { value: '94.63%', label: 'Precision', color: '#00AEEF' },
+                                    { value: '94.63%', label: 'Precision', color: '#EF4444' },
                                     { value: '94.87%', label: 'Recall', color: '#7C3AED' },
                                     { value: '94.75%', label: 'F1', color: '#FFB347' },
                                 ].map((m, i) => (
@@ -143,7 +143,7 @@ const DatasetSection: React.FC = () => {
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         className="lg:col-span-8 glass-surface rounded-2xl p-7"
-                        style={{ border: '1px solid rgba(0,174,239,0.12)' }}
+                        style={{ border: '1px solid rgba(239,68,68,0.12)' }}
                     >
                         <h3 className="font-bold text-white mb-2 flex items-center gap-2 text-sm">
                             <BarChart2 className="w-4 h-4 text-primary" />
@@ -161,22 +161,22 @@ const DatasetSection: React.FC = () => {
                                             <stop offset="95%" stopColor="#00FFB2" stopOpacity={0} />
                                         </linearGradient>
                                         <linearGradient id="valAccGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#00AEEF" stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor="#00AEEF" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#EF4444" stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                     <XAxis dataKey="epoch" stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} />
                                     <YAxis stroke="transparent" tick={{ fill: '#4B5563', fontSize: 11 }} tickLine={false} domain={[90, 100]} />
                                     <Tooltip
-                                        contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(0,174,239,0.25)', borderRadius: 10, fontSize: 12 }}
+                                        contentStyle={{ background: '#0A0F2C', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, fontSize: 12 }}
                                         labelStyle={{ color: '#9CA3AF' }}
                                         itemStyle={{ color: '#fff' }}
                                         formatter={(v: any) => [`${v}%`]}
                                     />
                                     <Area type="monotone" dataKey="accuracy" stroke="#00FFB2" strokeWidth={2.5}
                                         fill="url(#accGrad)" dot={false} name="Train Accuracy" />
-                                    <Area type="monotone" dataKey="val_accuracy" stroke="#00AEEF" strokeWidth={2}
+                                    <Area type="monotone" dataKey="val_accuracy" stroke="#EF4444" strokeWidth={2}
                                         fill="url(#valAccGrad)" dot={false} strokeDasharray="5 3" name="Val Accuracy" />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -210,7 +210,7 @@ const DatasetSection: React.FC = () => {
                         <div className="flex flex-wrap gap-5">
                             {[
                                 { color: '#00FFB2', label: 'Train Accuracy' },
-                                { color: '#00AEEF', label: 'Val Accuracy', dashed: true },
+                                { color: '#EF4444', label: 'Val Accuracy', dashed: true },
                                 { color: '#FF3B3B', label: 'Loss' },
                             ].map((l, i) => (
                                 <div key={i} className="flex items-center gap-2 text-xs text-gray-500">

@@ -9,10 +9,10 @@ const steps = [
         icon: Link2,
         title: 'URL Input',
         description: 'Raw URL string is ingested from client request, security telemetry, or real-time network stream.',
-        color: '#00AEEF',
-        glow: 'rgba(0,174,239,0.2)',
-        border: 'rgba(0,174,239,0.35)',
-        bg: 'rgba(0,174,239,0.06)',
+        color: '#EF4444',
+        glow: 'rgba(239,68,68,0.2)',
+        border: 'rgba(239,68,68,0.35)',
+        bg: 'rgba(239,68,68,0.06)',
     },
     {
         id: '02',
@@ -29,10 +29,10 @@ const steps = [
         icon: Cpu,
         title: 'CNN Feature Extraction',
         description: '256 Conv1D spatial filters sweep character embeddings to extract localized n-gram anomalies and spoof patterns.',
-        color: '#0077CC',
-        glow: 'rgba(0,119,204,0.2)',
-        border: 'rgba(0,119,204,0.35)',
-        bg: 'rgba(0,119,204,0.06)',
+        color: '#DC2626',
+        glow: 'rgba(220,38,38,0.2)',
+        border: 'rgba(220,38,38,0.35)',
+        bg: 'rgba(220,38,38,0.06)',
     },
     {
         id: '04',
@@ -72,7 +72,7 @@ const HowItWorksSection: React.FC = () => {
             {/* Background decoration */}
             <div className="absolute inset-0 bg-dots opacity-30 pointer-events-none" />
             <div className="absolute left-0 top-0 w-1/2 h-full pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 0% 50%, rgba(0,174,239,0.06) 0%, transparent 60%)' }} />
+                style={{ background: 'radial-gradient(ellipse at 0% 50%, rgba(239,68,68,0.06) 0%, transparent 60%)' }} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -101,7 +101,7 @@ const HowItWorksSection: React.FC = () => {
                     <div className="grid grid-cols-6 gap-2 relative">
                         {/* Connector line behind cards */}
                         <div className="absolute top-[48px] left-[8%] right-[8%] h-px pointer-events-none"
-                            style={{ background: 'linear-gradient(90deg, #00AEEF33, #7C3AED33, #0077CC33, #00FFB233, #FACC1533, #FF3B3B33)' }} />
+                            style={{ background: 'linear-gradient(90deg, #EF444433, #7C3AED33, #DC262633, #00FFB233, #FACC1533, #FF3B3B33)' }} />
 
                         {steps.map((step, i) => {
                             const Icon = step.icon;
@@ -149,7 +149,7 @@ const HowItWorksSection: React.FC = () => {
                             <motion.div
                                 key={i}
                                 className="absolute top-0 w-2 h-2 rounded-full"
-                                style={{ background: '#00AEEF', boxShadow: '0 0 8px #00AEEF' }}
+                                style={{ background: '#EF4444', boxShadow: '0 0 8px #EF4444' }}
                                 animate={{ x: ['8%', '92%'] }}
                                 transition={{
                                     duration: 3.5,
@@ -220,7 +220,7 @@ const HowItWorksSection: React.FC = () => {
                         { label: 'Detection', value: '35% CNN + 65% RoBERTa', sub: 'Hybrid Decision Fusion' },
                     ].map((item, i) => (
                         <div key={i} className="glass-surface rounded-2xl p-5 flex flex-col gap-1"
-                            style={{ border: '1px solid rgba(0,174,239,0.12)' }}>
+                            style={{ border: '1px solid rgba(239,68,68,0.12)' }}>
                             <span className="text-xs text-gray-500 uppercase tracking-wider">{item.label}</span>
                             <span className="text-lg font-bold text-white">{item.value}</span>
                             <span className="text-xs text-gray-600">{item.sub}</span>

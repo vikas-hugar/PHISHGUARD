@@ -7,7 +7,7 @@ const innovations = [
         title: 'Hybrid Fusion',
         desc: 'Structural + semantic intelligence combined.',
         icon: GitMerge,
-        color: '#00AEEF',
+        color: '#EF4444',
     },
     {
         title: 'RoBERTa NLP',
@@ -55,14 +55,14 @@ const ResearchSection: React.FC = () => {
                         <a href="#"
                             className="inline-flex items-center gap-2 w-fit px-6 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300"
                             style={{
-                                border: '1px solid rgba(0,174,239,0.3)',
-                                background: 'rgba(0,174,239,0.06)',
+                                border: '1px solid rgba(239,68,68,0.3)',
+                                background: 'rgba(239,68,68,0.06)',
                             }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,174,239,0.12)'}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,174,239,0.06)'}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.12)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.06)'}
                         >
                             <BookOpen className="w-4 h-4 text-primary" />
-                            <span style={{ color: '#00AEEF' }}>Read the Full Paper</span>
+                            <span style={{ color: '#EF4444' }}>Read the Full Paper</span>
                         </a>
                     </motion.div>
 

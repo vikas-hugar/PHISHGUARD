@@ -8,7 +8,7 @@ const AboutSection: React.FC = () => {
             {/* Background */}
             <div className="absolute inset-0 bg-dots opacity-20 pointer-events-none" />
             <div className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 100%, rgba(0,174,239,0.06) 0%, transparent 60%)' }} />
+                style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 100%, rgba(239,68,68,0.06) 0%, transparent 60%)' }} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -77,16 +77,16 @@ const AboutSection: React.FC = () => {
                         transition={{ duration: 0.6, delay: 0.15 }}
                         className="group rounded-2xl p-8 transition-all duration-300 relative overflow-hidden"
                         style={{
-                            background: 'rgba(0,174,239,0.04)',
-                            border: '1px solid rgba(0,174,239,0.15)',
+                            background: 'rgba(239,68,68,0.04)',
+                            border: '1px solid rgba(239,68,68,0.15)',
                         }}
-                        whileHover={{ borderColor: 'rgba(0,174,239,0.35)', boxShadow: '0 0 30px rgba(0,174,239,0.1)' }}
+                        whileHover={{ borderColor: 'rgba(239,68,68,0.35)', boxShadow: '0 0 30px rgba(239,68,68,0.1)' }}
                     >
                         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                            style={{ background: 'rgba(0,174,239,0.12)' }} />
+                            style={{ background: 'rgba(239,68,68,0.12)' }} />
 
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
-                            style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.3)' }}>
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)' }}>
                             <Network className="w-6 h-6 text-primary" />
                         </div>
                         <h3 className="text-xl font-bold mb-3 text-white">Why Hybrid AI Wins</h3>
@@ -121,13 +121,13 @@ const AboutSection: React.FC = () => {
                     className="rounded-2xl p-7 flex flex-col md:flex-row items-center justify-between gap-8"
                     style={{
                         background: 'rgba(10,15,44,0.6)',
-                        border: '1px solid rgba(0,174,239,0.15)',
+                        border: '1px solid rgba(239,68,68,0.15)',
                         backdropFilter: 'blur(16px)',
                     }}
                 >
                     <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-                            style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.25)' }}>
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <GraduationCap className="w-7 h-7 text-primary" />
                         </div>
                         <div>
@@ -142,9 +142,9 @@ const AboutSection: React.FC = () => {
                         {['Deep Learning', 'CNN', 'BiLSTM', 'RoBERTa', 'Cybersecurity', 'Flask API', 'React'].map(tag => (
                             <span key={tag} className="text-xs px-3 py-1.5 rounded-full font-semibold"
                                 style={{
-                                    background: 'rgba(0,174,239,0.08)',
-                                    border: '1px solid rgba(0,174,239,0.2)',
-                                    color: '#00AEEF',
+                                    background: 'rgba(239,68,68,0.08)',
+                                    border: '1px solid rgba(239,68,68,0.2)',
+                                    color: '#EF4444',
                                 }}>
                                 {tag}
                             </span>

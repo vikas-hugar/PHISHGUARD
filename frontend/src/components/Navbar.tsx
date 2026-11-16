@@ -37,7 +37,7 @@ const Navbar: React.FC = () => {
                         ? 'rgba(6,11,24,0.92)'
                         : 'rgba(6,11,24,0)',
                     backdropFilter: scrolled ? 'blur(24px)' : 'none',
-                    borderBottom: scrolled ? '1px solid rgba(0,174,239,0.12)' : '1px solid transparent',
+                    borderBottom: scrolled ? '1px solid rgba(239,68,68,0.2)' : '1px solid transparent',
                     boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
                 }}
             >
@@ -46,17 +46,17 @@ const Navbar: React.FC = () => {
 
                         {/* Logo */}
                         <a href="#" className="flex items-center gap-2.5 group">
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:shadow-glow-blue"
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:shadow-glow-red"
                                 style={{
-                                    background: 'linear-gradient(135deg, #00AEEF, #0077CC)',
-                                    boxShadow: '0 0 15px rgba(0,174,239,0.3)',
+                                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                                    boxShadow: '0 0 15px rgba(239,68,68,0.35)',
                                 }}>
                                 <Shield className="w-5 h-5 text-white" />
                             </div>
                             <span className="text-lg font-bold text-white">
-                                Phish<span style={{ color: '#00AEEF' }}>Guard</span>
+                                Phish<span style={{ color: '#EF4444' }}>Guard</span>
                                 <span className="text-xs ml-1 font-semibold px-1.5 py-0.5 rounded"
-                                    style={{ background: 'rgba(0,174,239,0.15)', color: '#00AEEF', border: '1px solid rgba(0,174,239,0.3)' }}>
+                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }}>
                                     AI
                                 </span>
                             </span>
@@ -81,15 +81,15 @@ const Navbar: React.FC = () => {
                                 href="#demo"
                                 className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl transition-all duration-300"
                                 style={{
-                                    background: 'linear-gradient(135deg, #00AEEF, #0077CC)',
-                                    boxShadow: '0 0 20px rgba(0,174,239,0.3)',
+                                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                                    boxShadow: '0 0 20px rgba(239,68,68,0.35)',
                                 }}
                                 onMouseEnter={e => {
-                                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 35px rgba(0,174,239,0.55)';
+                                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 35px rgba(239,68,68,0.6)';
                                     (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
                                 }}
                                 onMouseLeave={e => {
-                                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,174,239,0.3)';
+                                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(239,68,68,0.35)';
                                     (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
                                 }}
                             >
@@ -139,7 +139,7 @@ const Navbar: React.FC = () => {
                         transition={{ delay: navLinks.length * 0.05 }}
                         onClick={() => setMobileOpen(false)}
                         className="mt-4 flex items-center gap-2 px-8 py-4 text-lg font-bold text-white rounded-xl"
-                        style={{ background: 'linear-gradient(135deg, #00AEEF, #0077CC)' }}
+                        style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)' }}
                     >
                         <ScanLine className="w-5 h-5" />
                         Scan URL

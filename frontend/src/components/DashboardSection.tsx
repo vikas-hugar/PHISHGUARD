@@ -34,7 +34,7 @@ const INITIAL_SCANS = [
 // ── Real Model Performance Metrics (Hybrid AI V3) ──
 const MODEL_METRICS = [
     { label: 'Test Accuracy', value: '95.17%', raw: 95.17, color: '#00FFB2', sub: 'Hybrid AI Benchmark' },
-    { label: 'Precision', value: '94.63%', raw: 94.63, color: '#00AEEF', sub: 'True Positives / Predicted' },
+    { label: 'Precision', value: '94.63%', raw: 94.63, color: '#EF4444', sub: 'True Positives / Predicted' },
     { label: 'Recall', value: '94.87%', raw: 94.87, color: '#7C3AED', sub: 'Zero-Day Detection Coverage' },
     { label: 'F1-Score', value: '94.75%', raw: 94.75, color: '#FACC15', sub: 'Harmonic Mean P & R' },
 ];
@@ -184,7 +184,7 @@ const DashboardSection: React.FC = () => {
             <div className="absolute right-0 top-0 w-1/2 h-full pointer-events-none"
                 style={{ background: 'radial-gradient(ellipse at 100% 30%, rgba(0,255,178,0.05) 0%, transparent 60%)' }} />
             <div className="absolute left-0 bottom-0 w-1/3 h-1/2 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 0% 100%, rgba(0,174,239,0.06) 0%, transparent 60%)' }} />
+                style={{ background: 'radial-gradient(ellipse at 0% 100%, rgba(239,68,68,0.06) 0%, transparent 60%)' }} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -207,7 +207,7 @@ const DashboardSection: React.FC = () => {
                 {/* ── Row 1: Key Telemetry Counters (V4 — 8 cards) ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-4">
                     {[
-                        { icon: Activity, label: 'Total URLs Scanned', end: liveStats.total, suffix: '', color: '#00AEEF' },
+                        { icon: Activity, label: 'Total URLs Scanned', end: liveStats.total, suffix: '', color: '#EF4444' },
                         { icon: ShieldCheck, label: 'Legitimate URLs', end: liveStats.safe, suffix: '', color: '#00FFB2' },
                         { icon: Lock, label: 'Known Phishing', end: liveStats.known_phishing, suffix: '', color: '#FF3B3B' },
                         { icon: Zap, label: 'Zero-Day Phishing', end: liveStats.zero_day_phishing, suffix: '', color: '#FF6B35' },
@@ -269,7 +269,7 @@ const DashboardSection: React.FC = () => {
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         className="lg:col-span-7 glass-surface rounded-2xl p-6"
-                        style={{ border: '1px solid rgba(0,174,239,0.15)' }}
+                        style={{ border: '1px solid rgba(239,68,68,0.15)' }}
                     >
                         <div className="flex items-center justify-between mb-5">
                             <div>
@@ -309,7 +309,7 @@ const DashboardSection: React.FC = () => {
                                     <Tooltip
                                         contentStyle={{
                                             background: '#0A0F2C',
-                                            border: '1px solid rgba(0,174,239,0.3)',
+                                            border: '1px solid rgba(239,68,68,0.3)',
                                             borderRadius: '12px',
                                             fontSize: 12
                                         }}
@@ -340,7 +340,7 @@ const DashboardSection: React.FC = () => {
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
                         className="lg:col-span-5 glass-surface rounded-2xl p-6 flex flex-col justify-between"
-                        style={{ border: '1px solid rgba(0,174,239,0.15)' }}
+                        style={{ border: '1px solid rgba(239,68,68,0.15)' }}
                     >
                         <div>
                             <h3 className="font-bold text-white text-base flex items-center gap-2 mb-1">
@@ -398,7 +398,7 @@ const DashboardSection: React.FC = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     className="glass-surface rounded-2xl p-6 mb-8"
-                    style={{ border: '1px solid rgba(0,174,239,0.15)' }}
+                    style={{ border: '1px solid rgba(239,68,68,0.15)' }}
                 >
                     <div className="flex items-center justify-between mb-5">
                         <div>

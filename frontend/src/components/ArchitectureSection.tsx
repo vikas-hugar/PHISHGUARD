@@ -27,9 +27,9 @@ const nodes = [
         label: 'CNN Feature Extraction',
         sub: '256 Conv1D spatial filters (kernel=5, ReLU) + MaxPooling1D for n-gram features',
         icon: LayoutGrid,
-        color: '#00AEEF',
-        border: 'rgba(0,174,239,0.35)',
-        bg: 'rgba(0,174,239,0.07)',
+        color: '#EF4444',
+        border: 'rgba(239,68,68,0.35)',
+        bg: 'rgba(239,68,68,0.07)',
     },
     {
         id: 'lstm',
@@ -64,7 +64,7 @@ const nodes = [
         sub: 'Final classification layer outputting calibrated threat probability with Explainable AI',
         icon: Cpu,
         color: '#FF3B3B',
-        gradient: 'linear-gradient(135deg, rgba(255,59,59,0.15), rgba(0,174,239,0.08))',
+        gradient: 'linear-gradient(135deg, rgba(255,59,59,0.15), rgba(239,68,68,0.08))',
         border: 'rgba(255,59,59,0.35)',
         bg: 'rgba(255,59,59,0.07)',
     },
@@ -76,7 +76,7 @@ const ArchitectureSection: React.FC = () => {
             {/* Background */}
             <div className="absolute inset-0 bg-dots opacity-25 pointer-events-none" />
             <div className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,174,239,0.05) 0%, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(239,68,68,0.05) 0%, transparent 70%)' }} />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -104,12 +104,12 @@ const ArchitectureSection: React.FC = () => {
                         <div className="relative rounded-3xl p-8"
                             style={{
                                 background: 'rgba(10,15,44,0.6)',
-                                border: '1px solid rgba(0,174,239,0.15)',
+                                border: '1px solid rgba(239,68,68,0.15)',
                                 backdropFilter: 'blur(20px)',
                             }}>
                             {/* Inner glow */}
                             <div className="absolute inset-0 rounded-3xl pointer-events-none"
-                                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,174,239,0.08) 0%, transparent 60%)' }} />
+                                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.08) 0%, transparent 60%)' }} />
 
                             <div className="relative z-10 flex flex-col items-center space-y-3">
                                 {nodes.map((node, i) => {
@@ -174,9 +174,9 @@ const ArchitectureSection: React.FC = () => {
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             className="glass-surface rounded-2xl p-6"
-                            style={{ border: '1px solid rgba(0,174,239,0.15)' }}
+                            style={{ border: '1px solid rgba(239,68,68,0.15)' }}
                         >
-                            <h3 className="font-bold text-white mb-5 text-sm uppercase tracking-wider" style={{ color: '#00AEEF' }}>
+                            <h3 className="font-bold text-white mb-5 text-sm uppercase tracking-wider" style={{ color: '#EF4444' }}>
                                 Architecture Summary
                             </h3>
                             <div className="space-y-3">
@@ -214,9 +214,9 @@ const ArchitectureSection: React.FC = () => {
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
                             className="glass-surface rounded-2xl p-6"
-                            style={{ border: '1px solid rgba(0,174,239,0.12)' }}
+                            style={{ border: '1px solid rgba(239,68,68,0.12)' }}
                         >
-                            <h3 className="font-bold text-sm uppercase tracking-wider mb-4" style={{ color: '#00AEEF' }}>
+                            <h3 className="font-bold text-sm uppercase tracking-wider mb-4" style={{ color: '#EF4444' }}>
                                 Enterprise Threat Levels
                             </h3>
                             <div className="space-y-2.5">

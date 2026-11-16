@@ -7,7 +7,7 @@ const TeamSection: React.FC = () => {
         <section id="team" className="py-28 relative overflow-hidden">
             <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
             <div className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgba(0,174,239,0.05) 0%, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgba(239,68,68,0.05) 0%, transparent 70%)' }} />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -39,16 +39,16 @@ const TeamSection: React.FC = () => {
                         viewport={{ once: true }}
                         className="rounded-2xl p-8 relative overflow-hidden group transition-all duration-300"
                         style={{
-                            background: 'rgba(0,174,239,0.04)',
-                            border: '1px solid rgba(0,174,239,0.15)',
+                            background: 'rgba(239,68,68,0.04)',
+                            border: '1px solid rgba(239,68,68,0.15)',
                         }}
-                        whileHover={{ borderColor: 'rgba(0,174,239,0.4)', boxShadow: '0 0 30px rgba(0,174,239,0.1)' }}
+                        whileHover={{ borderColor: 'rgba(239,68,68,0.4)', boxShadow: '0 0 30px rgba(239,68,68,0.1)' }}
                     >
                         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                            style={{ background: 'rgba(0,174,239,0.1)' }} />
+                            style={{ background: 'rgba(239,68,68,0.1)' }} />
 
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 text-primary"
-                            style={{ background: 'rgba(0,174,239,0.12)', border: '1px solid rgba(0,174,239,0.25)' }}>
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <User2 className="w-6 h-6" />
                         </div>
                         <p className="text-xs text-gray-600 uppercase tracking-widest font-bold mb-2">Developed By</p>

@@ -23,7 +23,7 @@ import time
 from urllib.parse import urlparse, urlunparse
 
 # Specialized V5 Security Modules
-from brand_engine import analyze_brand_impersonation, COMPANY_NAMES
+from brand_engine import analyze_brand_impersonation, COMPANY_NAMES, is_official_brand_domain, extract_apex_label
 from homoglyph_detector import detect_homoglyphs
 from punycode_engine import analyze_punycode
 from typosquatting_detector import detect_typosquatting
@@ -53,7 +53,15 @@ TRUSTED_DOMAINS = {
     "sbi.co.in", "hdfcbank.com", "icicibank.com", "axisbank.com", "kotak.com",
     "phonepe.com", "paytm.com", "npci.org.in", "chase.com", "bankofamerica.com",
     "wellsfargo.com", "citi.com", "crypto.com", "polygon.technology", "mozilla.org",
-    "example.com", "example.org", "example.net", "iana.org"
+    "example.com", "example.org", "example.net", "iana.org",
+    # Extended verified global and Indian platforms
+    "flipkart.com", "flipkart.co.in", "flipkart.in", "myntra.com", "swiggy.com", "zomato.com",
+    "walmart.com", "ebay.com", "target.com", "nike.com", "adidas.com",
+    "wordpress.org", "wordpress.com", "reddit.com", "coursera.org", "slack.com",
+    "zoom.us", "adobe.com", "salesforce.com", "dropbox.com", "cloudflare.com",
+    "yahoo.com", "bing.com", "cnn.com", "bbc.com", "bbc.co.uk", "nytimes.com",
+    "ycombinator.com", "medium.com", "twitch.tv", "pinterest.com", "hotstar.com",
+    "jiomart.com", "tatacliq.com"
 }
 
 
@@ -67,8 +75,12 @@ def is_trusted_domain(domain: str) -> bool:
     if domain in TRUSTED_DOMAINS:
         return True
     for td in TRUSTED_DOMAINS:
-        if domain.endswith("." + td):
+        if domain == td or domain.endswith("." + td):
             return True
+    # Also verify official domains defined for known brands
+    apex = extract_apex_label(domain)
+    if is_official_brand_domain(apex, domain):
+        return True
     return False
 
 
@@ -230,6 +242,7 @@ def check_global_repository(raw_url: str) -> dict:
 
     result = {
         "found": False,
+        "in_threat_database": False,
         "match_type": None,
         "matched_value": None,
         "confidence": 0.0,
@@ -254,6 +267,7 @@ def check_global_repository(raw_url: str) -> dict:
     if url_found:
         result.update({
             "found": True,
+            "in_threat_database": True,
             "match_type": u_type,
             "matched_value": u_val,
             "confidence": 100.0,
@@ -269,6 +283,7 @@ def check_global_repository(raw_url: str) -> dict:
     if dom_found:
         result.update({
             "found": True,
+            "in_threat_database": True,
             "match_type": "Malicious Domain",
             "matched_value": dom_val,
             "confidence": 98.5,

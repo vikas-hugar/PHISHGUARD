@@ -5,7 +5,7 @@ import {
     Cpu, Clock, Download, Zap, CheckCircle2,
     AlertCircle, Sparkles, RefreshCw, Database, Lock, Globe, Target, Flame,
     Layers, Terminal, Eye, Shield, FileText, Check, ArrowRight,
-    Camera, Maximize2, Server, Key, CreditCard, Activity, Network
+    Camera, Maximize2, Server, Key, CreditCard, Activity, Network, X
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { SafeWebViewer } from './SafeWebViewer';
@@ -435,6 +435,12 @@ const PRESET_URLS = [
     { label: 'SSRF Block Test', url: 'http://192.168.1.1/admin', tag: 'Security Block', color: '#EF4444' },
 ];
 
+const CURATED_SAMPLES = [
+    { label: 'Safe website', url: 'https://example.com', dot: 'bg-emerald-400' },
+    { label: 'Phishing clone', url: 'http://paypal-security-update.com/login', dot: 'bg-rose-400' },
+    { label: 'Brand spoofing', url: 'http://apple-verify-account-security.com/login', dot: 'bg-amber-400' },
+];
+
 const DemoSection: React.FC = () => {
     const [url, setUrl] = useState('');
     const [scanMode, setScanMode] = useState<'quick' | 'deep'>('deep');
@@ -769,100 +775,112 @@ const DemoSection: React.FC = () => {
     ];
 
     return (
-        <section id="demo" className="py-16 sm:py-20 relative bg-slate-950 font-sans">
-            <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 relative z-10 space-y-6">
-                {/* Section Header */}
-                <div className="text-center space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-400">
-                        <Shield className="w-3.5 h-3.5 text-blue-400" />
-                        <span>PhishGuard Security Inspection</span>
+        <section id="demo" className="py-16 sm:py-24 relative bg-slate-950 font-sans overflow-hidden">
+            {/* Subtle atmospheric ambient glow */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[20rem] bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 relative z-10 space-y-7">
+                {/* Section Header — Human, Warm, Aesthetic */}
+                <div className="text-center space-y-3">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shadow-sm backdrop-blur-md">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="font-medium tracking-wide">Intelligent Link Inspector</span>
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
-                        Website Trust &amp; Phishing Analysis
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                        Check any link before you trust it
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-                        Evaluate website legitimacy, inspect domain characteristics, and explore pages safely in an isolated sandbox.
+                    <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+                        Detect brand impersonation, zero-day traps, and hidden redirects in seconds — with a safe, isolated view.
                     </p>
                 </div>
 
-                {/* Main Card */}
-                <div className="rounded-2xl p-5 sm:p-7 bg-slate-900/60 border border-slate-800 shadow-xl space-y-5">
-                    {/* Status Strip */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800/80 text-xs text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>SSRF Protection Active</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>Pre-Scan Reachability Gate Active</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full ${sandboxStatus?.available ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-                            <span>Isolated Sandbox: {sandboxStatus?.available ? 'Ready' : 'Offline'}</span>
-                        </div>
-                    </div>
+                {/* Main Card — Handcrafted Aesthetic Design */}
+                <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-slate-900/90 via-slate-900/70 to-slate-950/90 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)_inset] backdrop-blur-2xl space-y-5 overflow-hidden">
+                    {/* Top ambient highlight line */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent pointer-events-none" />
 
-                    {/* Presets */}
-                    <div className="space-y-2">
-                        <span className="text-xs font-medium text-slate-400 block">Test URL benchmarks:</span>
-                        <div className="flex flex-wrap gap-1.5">
-                            {PRESET_URLS.map((preset, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => handlePreset(preset.url)}
-                                    className="px-2.5 py-1 rounded-md text-xs font-mono bg-slate-950/60 hover:bg-slate-800 text-slate-300 border border-slate-800/80 hover:border-slate-700 transition-colors cursor-pointer"
-                                >
-                                    {preset.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* URL Input Form */}
-                    <form onSubmit={handleScan} className="pt-1">
-                        <div className="relative flex items-center">
+                    {/* URL Input Form — The Handcrafted Centerpiece */}
+                    <form onSubmit={handleScan} className="relative z-10 pt-1">
+                        <div className="relative group rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-slate-700 focus-within:border-cyan-500/60 focus-within:ring-4 focus-within:ring-cyan-500/10 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.45),0_1px_2px_rgba(255,255,255,0.04)_inset] flex items-center p-1.5 sm:p-2">
+                            <div className="pl-3 sm:pl-3.5 pr-2 text-slate-500 group-focus-within:text-cyan-400 transition-colors shrink-0">
+                                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
                             <input
                                 id="url-scanner-input"
                                 type="text"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                placeholder="Enter website address (e.g., https://example.com)..."
-                                className="w-full pl-4 pr-32 py-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors"
+                                placeholder="Paste a link to check (e.g., https://example.com)..."
+                                className="w-full bg-transparent px-2 py-2.5 sm:py-3 text-sm sm:text-base text-slate-100 placeholder-slate-500 font-sans focus:outline-none select-all"
                             />
-                            <div className="absolute right-1.5 flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 sm:gap-2 pr-1 shrink-0">
                                 {url && (
                                     <button
                                         type="button"
                                         onClick={handleReset}
-                                        className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                                        title="Clear"
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all cursor-pointer"
+                                        title="Clear link"
+                                        aria-label="Clear link"
                                     >
-                                        <RefreshCw className="w-4 h-4" />
+                                        <X className="w-4 h-4" />
                                     </button>
                                 )}
                                 <button
                                     id="scan-button"
                                     type="submit"
                                     disabled={scanStatus === 'scanning' || !url.trim()}
-                                    className="px-4 py-2 rounded-lg font-medium text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
+                                    className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.98] transition-all duration-200 flex items-center gap-2 shadow-[0_2px_14px_rgba(6,182,212,0.35)] disabled:opacity-40 disabled:hover:from-cyan-500 disabled:hover:to-blue-600 disabled:shadow-none cursor-pointer shrink-0"
                                 >
                                     {scanStatus === 'scanning' ? (
                                         <>
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                             <span>Analyzing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Search className="w-3.5 h-3.5" />
-                                            <span>Analyze URL</span>
+                                            <span>Scan Link</span>
+                                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                                         </>
                                     )}
                                 </button>
                             </div>
                         </div>
                     </form>
+
+                    {/* Simple, Curated Sample Suggestions */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-center gap-2 pt-0.5 text-xs text-slate-400">
+                        <span className="text-slate-500 text-[11px] font-medium">Try a sample:</span>
+                        {CURATED_SAMPLES.map((sample, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                onClick={() => handlePreset(sample.url)}
+                                className="px-3 py-1 rounded-full text-xs font-mono bg-slate-950/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
+                                title={`Test ${sample.label}: ${sample.url}`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full ${sample.dot}`} />
+                                <span>{sample.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Reassuring Handcrafted Trust Footnote */}
+                    <div className="relative z-10 pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400 text-center">
+                        <span className="inline-flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Zero scripts run on your device</span>
+                        </span>
+                        <span className="hidden sm:inline text-slate-700">•</span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <Lock className="w-3 h-3 text-cyan-400" />
+                            <span>100% Isolated sandbox</span>
+                        </span>
+                        <span className="hidden sm:inline text-slate-700">•</span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <Eye className="w-3 h-3 text-slate-400" />
+                            <span>Read-only inspection</span>
+                        </span>
+                    </div>
 
                     {/* Dynamic Status / Scanning / Results Content */}
                     <AnimatePresence mode="wait">
@@ -939,22 +957,30 @@ const DemoSection: React.FC = () => {
                                     verdict={result.verdict || result.classification || 'Legitimate'}
                                     riskScore={result.risk_score}
                                     targetBrand={result.target_brand}
-                                    threatIntelligenceFound={Boolean(result.threat_intelligence?.found || result.repository_status === 'Found')}
+                                    threatIntelligenceFound={Boolean(
+                                        result.repository_status === 'Found' ||
+                                        result.threat_intelligence?.in_repository ||
+                                        (result.threat_intelligence?.found && ['Exact URL Match', 'SHA-256 Hash Match', 'Malicious Domain'].includes(result.threat_intelligence?.match_type))
+                                    )}
                                     hasCredentialHarvesting={Boolean(
-                                        result.visual_analysis?.has_credential_harvesting ||
-                                        result.dom_behavior_analysis?.form_exfiltration?.has_credential_harvesting ||
-                                        (result.deep_scan?.password_fields ?? 0) > 0
+                                        (result.verdict !== 'Legitimate' && result.classification !== 'LEGITIMATE') &&
+                                        (
+                                            result.visual_analysis?.has_credential_harvesting ||
+                                            result.dom_behavior_analysis?.form_exfiltration?.has_credential_harvesting ||
+                                            ((result.dom_behavior_analysis?.form_exfiltration?.suspicious_exfil_targets?.length ?? 0) > 0)
+                                        )
                                     )}
                                     hasPaymentFields={Boolean(
-                                        result.visual_analysis?.has_payment_fields ||
-                                        (result.deep_scan?.payment_fields ?? 0) > 0
+                                        (result.verdict !== 'Legitimate' && result.classification !== 'LEGITIMATE') &&
+                                        (result.visual_analysis?.has_payment_fields || (result.deep_scan?.payment_fields ?? 0) > 0)
                                     )}
                                     homoglyphDetected={Boolean(result.homoglyph_analysis?.detected)}
                                     punycodeDetected={Boolean(result.punycode_analysis?.is_punycode)}
                                     typosquattingDetected={Boolean(result.typosquatting_analysis?.is_typosquat)}
                                     modelAnomaliesDetected={Boolean(
-                                        (result.models?.cnn_bilstm?.calibrated_probability ?? 0) > 50 ||
-                                        (result.models?.roberta?.calibrated_probability ?? 0) > 50
+                                        (result.verdict !== 'Legitimate' && result.classification !== 'LEGITIMATE') &&
+                                        ((result.models?.cnn_bilstm?.calibrated_probability ?? 0) > 65 ||
+                                         (result.models?.roberta?.calibrated_probability ?? 0) > 65)
                                     )}
                                     reasons={result.explanations || result.reasons}
                                 />

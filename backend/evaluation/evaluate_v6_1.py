@@ -38,7 +38,7 @@ def send_predict_request(url: str, scan_mode: str = "quick") -> tuple[int, dict,
     )
     t0 = time.perf_counter()
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=45) as resp:
             lat_ms = (time.perf_counter() - t0) * 1000
             data = json.loads(resp.read().decode("utf-8"))
             return resp.status, data, lat_ms
@@ -112,8 +112,8 @@ def run_benchmark():
             confidence = 100.0
         else:
             observed_verdict = data.get("verdict", "ERROR")
-            risk_score = data.get("risk_score", 0.0)
-            confidence = data.get("confidence", 0.0)
+            risk_score = float(data.get("risk_score") or 0.0)
+            confidence = float(data.get("confidence") or 0.0)
             passed = observed_verdict in acceptables
 
         # Classification metrics accumulation

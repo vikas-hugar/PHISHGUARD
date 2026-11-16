@@ -53,13 +53,24 @@ _INFO_KEYWORDS = [
     "blog", "articles", "news",
 ]
 
-# Destructive action keywords — MUST NEVER BE VISITED (Requirement 5 & 30)
+# Destructive/mutating endpoint tokens — matched on token/segment boundaries (Requirement 5 & 30)
 _BLOCKED_ACTION_KEYWORDS = [
-    "logout", "signout", "log-out", "sign-out", "logoff", "signoff", "exit",
-    "delete", "remove", "destroy", "drop", "wipe", "terminate", "kill",
-    "purchase", "checkout", "buy", "pay", "payment", "order", "subscribe",
-    "cancel", "unsubscribe", "revoke", "reset-db", "clear-all",
+    "logout", "signout", "log-out", "sign-out", "logoff", "signoff",
+    "delete", "destroy", "wipe", "terminate", "reset-db", "clear-all",
+    "checkout", "unsubscribe", "revoke", "add-to-cart", "buy-now",
 ]
+
+_BLOCKED_ACTION_PATH_RE = re.compile(
+    r'(?:^|[/_.-])(?:' + "|".join(re.escape(k) for k in _BLOCKED_ACTION_KEYWORDS) + r')(?:$|[/_.-])',
+    re.IGNORECASE,
+)
+
+_DESTRUCTIVE_QUERY_KEYS = frozenset(["action", "cmd", "op", "do", "task"])
+_DESTRUCTIVE_QUERY_VALUES = frozenset([
+    "delete", "remove", "destroy", "wipe", "purge", "drop", "terminate",
+    "logout", "signout", "logoff", "signoff", "unsubscribe", "revoke",
+    "checkout", "pay", "purchase", "cancel", "submit", "update", "edit", "create",
+])
 
 # Query parameters to ignore during deduplication (analytics, tracking, cache-busters)
 _IGNORED_QUERY_PARAMS = frozenset([
@@ -192,13 +203,25 @@ class PageDiscoveryEngine:
                 if href:
                     raw_links.append((href, "Anchor Link"))
 
-            # <area href="..."> and <link rel="canonical" href="...">
-            for m in re.finditer(r'''<\s*(?:area|link)\b[^>]*\bhref\s*=\s*["']([^"']+)["']''', html_content, flags=re.IGNORECASE):
-                raw_links.append((m.group(1), "Document Link"))
+            # <area href=...> and <link rel="canonical" href=...>
+            for m in re.finditer(r'''<\s*(?:area|link)\b[^>]*\bhref\s*=\s*(?:["']([^"']+)["']|([^\s>]+))''', html_content, flags=re.IGNORECASE):
+                href = m.group(1) or m.group(2)
+                if href:
+                    raw_links.append((href, "Document Link"))
 
-            # SPA & Client-Side routing attributes: data-href, data-to, to, routerlink, data-url, data-route
-            for m in re.finditer(r'''\b(?:data-href|data-to|routerlink|data-url|data-route)\s*=\s*["']([^"']+)["']''', html_content, flags=re.IGNORECASE):
+            # SPA & Client-Side routing attributes: data-href, data-to, routerlink, data-url, data-route, data-link
+            for m in re.finditer(r'''\b(?:data-href|data-to|routerlink|data-url|data-route|data-link)\s*=\s*["']([^"']+)["']''', html_content, flags=re.IGNORECASE):
                 raw_links.append((m.group(1), "SPA Router Route"))
+
+            # Static inline JS navigation patterns on clickable buttons/elements (never executed)
+            for m in re.finditer(
+                r'''\bonclick\s*=\s*["'][^"']*?(?:(?:window\.|document\.)?location(?:\.href)?\s*=\s*|(?:window\.location\.(?:assign|replace)|window\.open|router\.push|navigate)\s*\(\s*)(?:["']([^"']+)["']|&quot;([^&]+)&quot;|&#39;([^&]+)&#39;)''',
+                html_content,
+                flags=re.IGNORECASE,
+            ):
+                nav_url = m.group(1) or m.group(2) or m.group(3)
+                if nav_url and not nav_url.lower().startswith(("javascript:", "mailto:", "tel:", "#")):
+                    raw_links.append((html.unescape(nav_url), "Button Route"))
 
             # Form actions: <form action="..."> (INSPECTED ONLY, NEVER SUBMITTED)
             for m in re.finditer(r'''<\s*form\b[^>]*\baction\s*=\s*["']([^"']+)["']''', html_content, flags=re.IGNORECASE):
@@ -220,7 +243,7 @@ class PageDiscoveryEngine:
 
         # Always include root path / as base candidate
         root_url = f"{origin_scheme}://{origin_netloc}/"
-        root_clean = self._normalize_candidate_url(root_url)
+        root_clean = self._normalize_candidate_url(root_url, default_scheme=origin_scheme)
         if root_clean:
             seen_normalized.add(root_clean)
             candidates.append({
@@ -262,6 +285,15 @@ class PageDiscoveryEngine:
             if res_scheme not in ("http", "https"):
                 continue
 
+            # Auto-upgrade candidate link to HTTPS if parent origin uses HTTPS (HTTPS-first crawl policy)
+            if (origin_scheme == "https" or current_url.lower().startswith("https://")) and res_scheme == "http":
+                resolved = "https://" + resolved[7:]
+                try:
+                    parsed_res = urlparse(resolved)
+                    res_scheme = "https"
+                except Exception:
+                    pass
+
             res_host = (parsed_res.hostname or "").lower()
 
             # Same-Origin Policy (Requirement 10 & 36)
@@ -289,7 +321,7 @@ class PageDiscoveryEngine:
                 continue
 
             # URL Normalization (Requirement 9)
-            norm_url = self._normalize_candidate_url(resolved)
+            norm_url = self._normalize_candidate_url(resolved, default_scheme=origin_scheme)
             if not norm_url or norm_url in seen_normalized:
                 continue
             seen_normalized.add(norm_url)
@@ -525,19 +557,38 @@ class PageDiscoveryEngine:
         return False
 
     def _check_destructive_action(self, lower_path: str, lower_query: str) -> tuple[bool, str]:
-        """Classifies endpoints that perform state changes, payment, logout, or deletion."""
-        for kw in _BLOCKED_ACTION_KEYWORDS:
-            if kw in lower_path or kw in lower_query:
-                return True, f"Blocked potentially destructive action endpoint ('{kw}')"
+        """Classifies endpoints that perform state changes, payment, logout, or deletion using segment/token boundaries."""
+        path_match = _BLOCKED_ACTION_PATH_RE.search(lower_path)
+        if path_match:
+            token = path_match.group(0).strip("/_.-")
+            return True, f"Blocked potentially destructive action endpoint ('{token}')"
+
+        if lower_query:
+            params = parse_qs(lower_query, keep_blank_values=True)
+            for key, values in params.items():
+                clean_key = key.strip().lower()
+                if clean_key in _BLOCKED_ACTION_KEYWORDS:
+                    return True, f"Blocked potentially destructive action endpoint ('{clean_key}')"
+                if clean_key in {"method", "_method", "http_method"}:
+                    for val in values:
+                        if val.strip().lower() in {"post", "put", "delete", "patch"}:
+                            return True, f"Blocked state-changing HTTP method parameter ('{val.strip()}')"
+                if clean_key in _DESTRUCTIVE_QUERY_KEYS:
+                    for val in values:
+                        clean_val = val.strip().lower()
+                        if clean_val in _DESTRUCTIVE_QUERY_VALUES:
+                            return True, f"Blocked destructive query action ('{clean_key}={clean_val}')"
         return False, ""
 
-    def _normalize_candidate_url(self, raw_url: str) -> Optional[str]:
+    def _normalize_candidate_url(self, raw_url: str, default_scheme: Optional[str] = None) -> Optional[str]:
         """
         Normalizes URL for strict deduplication, removing tracking queries and trailing slashes (Requirement 9).
         """
         try:
             parsed = urlparse(raw_url)
-            scheme = (parsed.scheme or "http").lower()
+            scheme = (parsed.scheme or default_scheme or "http").lower()
+            if default_scheme == "https" and scheme == "http":
+                scheme = "https"
             host = (parsed.hostname or "").lower().rstrip(".")
             port = f":{parsed.port}" if parsed.port and parsed.port not in (80, 443) else ""
 

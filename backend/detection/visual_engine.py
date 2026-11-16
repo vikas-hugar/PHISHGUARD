@@ -68,6 +68,19 @@ BRAND_LEGITIMATE_DOMAINS = {
     "coinbase": ["coinbase.com"],
     "binance": ["binance.com"],
     "metamask": ["metamask.io"],
+    "flipkart": ["flipkart.com", "flipkart.co.in", "flipkart.in", "myntra.com"],
+    "walmart": ["walmart.com"],
+    "ebay": ["ebay.com", "ebay.co.uk", "ebay.in"],
+    "target": ["target.com"],
+    "nike": ["nike.com"],
+    "adidas": ["adidas.com"],
+    "wordpress": ["wordpress.org", "wordpress.com"],
+    "coursera": ["coursera.org"],
+    "reddit": ["reddit.com"],
+    "slack": ["slack.com"],
+    "zoom": ["zoom.us"],
+    "shopify": ["shopify.com"],
+    "spotify": ["spotify.com"],
 }
 
 
@@ -155,20 +168,25 @@ def analyze_visual_evidence(
     # 8. Compute Visual Phishing Risk Score (0 - 100)
     visual_risk = 0.0
     if not is_whitelisted:
+        # Visual brand impersonation is the core high-confidence visual phishing indicator
         if brand_impersonation_visual:
             visual_risk += 45.0
-        if has_credential_harvesting:
-            visual_risk += 30.0
-        elif is_login_page:
-            visual_risk += 15.0
-        if has_payment_fields:
-            visual_risk += 25.0
-        if has_otp_fields:
-            visual_risk += 15.0
-        if urgency_detected:
-            visual_risk += 15.0
+            if has_credential_harvesting:
+                visual_risk += 35.0  # Impersonating brand AND harvesting credentials
+            if has_payment_fields:
+                visual_risk += 30.0
+            if has_otp_fields:
+                visual_risk += 20.0
+        # External form action (exfiltrating data to another domain)
         if external_action:
+            visual_risk += 35.0
+            if has_credential_harvesting:
+                visual_risk += 25.0
+        # Psychological coercion / urgency language
+        if urgency_detected and (brand_impersonation_visual or external_action):
             visual_risk += 20.0
+        elif urgency_detected and has_credential_harvesting:
+            visual_risk += 10.0
     else:
         # Whitelisted domains have minimal visual risk unless compromised
         visual_risk = 0.0

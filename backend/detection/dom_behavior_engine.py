@@ -77,6 +77,30 @@ _LEGITIMATE_THIRD_PARTIES = frozenset([
     "hcaptcha.com",
     "stripe.com",
     "paypal.com",
+    "jquery.com",
+    "bootstrapcdn.com",
+    "vimeo.com",
+    "segment.com",
+    "intercom.io",
+    "clarity.ms",
+    "newrelic.com",
+    "sentry.io",
+    "datadoghq.com",
+    "cookiebot.com",
+    "onetrust.com",
+    "wp.com",
+    "gravatar.com",
+    "akamaihd.net",
+    "fastly.net",
+    "cloudfront.net",
+    "azureedge.net",
+    "hotjar.com",
+    "mixpanel.com",
+    "typekit.net",
+    "doubleclick.net",
+    "googleadservices.com",
+    "facebook.net",
+    "connect.facebook.net",
 ])
 
 
@@ -577,14 +601,13 @@ def analyze_dom_behavior(
             risk_score += 12.0
         if contextmenu_suppressed:
             risk_score += 8.0
-        if has_credential_harvesting:
-            risk_score += 12.0
+        # Credential inputs are only elevated if exfiltrating or combined with structural anomalies
         if cross_origin_actions:
             risk_score += min(len(cross_origin_actions) * 10.0, 20.0)
-
-        # Baseline presence of untrusted third parties with credential inputs
-        if has_credential_harvesting and len(filtered_untrusted_domains) > 2:
-            risk_score += 14.0
+            if has_credential_harvesting:
+                risk_score += 15.0  # Cross-origin credential form
+        elif has_credential_harvesting and (dynamic_password_injection or hidden_credential_fields > 0 or fake_dialog_detected):
+            risk_score += 12.0
 
     risk_score = max(0.0, min(100.0, round(risk_score, 1)))
 

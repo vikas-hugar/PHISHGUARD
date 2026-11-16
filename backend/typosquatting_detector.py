@@ -20,6 +20,7 @@ from brand_engine import (
     KEYBOARD_NEIGHBORS,
     BRAND_PHONETIC_ALIASES,
     COMPANY_NAMES,
+    is_official_brand_domain,
 )
 
 
@@ -68,6 +69,10 @@ def detect_typosquatting(domain: str) -> dict:
     }
 
     if not clean_apex:
+        return result
+
+    # Never flag a verified official brand domain as a typosquat
+    if is_official_brand_domain(clean_apex, domain):
         return result
 
     # Check phonetic aliases first

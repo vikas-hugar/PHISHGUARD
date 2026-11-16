@@ -296,7 +296,21 @@ def run_deep_scan(url: str, fast_mode: bool = False, device_profile: str = "desk
                                "VirtualBox analysis VM is not available."),
         )
 
-    return _execute_vm_scan(url, t0, fast_mode=fast_mode, device_profile=device_profile)
+    res = _execute_vm_scan(url, t0, fast_mode=fast_mode, device_profile=device_profile)
+
+    # Automatic HTTPS upgrade fallback (HTTPS-First policy):
+    # If the URL used plain HTTP and navigation failed, yielded no DOM, or encountered a connection drop,
+    # retry with HTTPS immediately.
+    has_dom = bool(res.get("dom_snapshot") and res["dom_snapshot"].strip() and res["dom_snapshot"].strip() != "<html><head></head><body></body></html>")
+    if not has_dom and url.startswith("http://"):
+        https_url = "https://" + url[7:]
+        print(f"[VM_CONTROLLER] HTTP scan yielded no DOM. Upgrading to HTTPS: {https_url}", flush=True)
+        https_res = _execute_vm_scan(https_url, t0, fast_mode=fast_mode, device_profile=device_profile)
+        https_has_dom = bool(https_res.get("dom_snapshot") and https_res["dom_snapshot"].strip() and https_res["dom_snapshot"].strip() != "<html><head></head><body></body></html>")
+        if https_has_dom or https_res.get("page_available") or (not res.get("page_available") and https_res.get("success")):
+            return https_res
+
+    return res
 
 
 # ---------------------------------------------------------------------------
@@ -363,12 +377,12 @@ def _execute_vm_scan(url: str, t0: float, fast_mode: bool = False, device_profil
         "connect_timeout_ms": int(VM_CONFIG["CONNECT_TIMEOUT"] * 1000),
         "main_navigation_timeout_ms": int((28 if fast_mode else VM_CONFIG["MAIN_NAVIGATION_TIMEOUT"]) * 1000),
         "dom_ready_timeout_ms": int((12 if fast_mode else VM_CONFIG["DOM_READY_TIMEOUT"]) * 1000),
-        "render_timeout_ms": int((3 if fast_mode else VM_CONFIG["RENDER_TIMEOUT"]) * 1000),
+        "render_timeout_ms": int((5 if fast_mode else VM_CONFIG["RENDER_TIMEOUT"]) * 1000),
         "screenshot_timeout_ms": int((5 if fast_mode else VM_CONFIG["SCREENSHOT_TIMEOUT"]) * 1000),
         "total_scan_timeout_ms": int((38 if fast_mode else VM_CONFIG["TOTAL_DEEP_SCAN_TIMEOUT"]) * 1000),
         # Backward compatibility with older VM agent versions
         "navigation_timeout_ms": int((28 if fast_mode else VM_CONFIG["MAIN_NAVIGATION_TIMEOUT"]) * 1000),
-        "content_settle_timeout_ms": int((3 if fast_mode else VM_CONFIG["RENDER_TIMEOUT"]) * 1000),
+        "content_settle_timeout_ms": int((5 if fast_mode else VM_CONFIG["RENDER_TIMEOUT"]) * 1000),
         "browser_timeout_ms": int((28 if fast_mode else VM_CONFIG["MAIN_NAVIGATION_TIMEOUT"]) * 1000),
         "max_redirects": VM_CONFIG["MAX_REDIRECTS"],
         "max_response_kb": VM_CONFIG["MAX_RESPONSE_KB"],

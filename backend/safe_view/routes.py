@@ -43,9 +43,9 @@ def _find_page(page_id: str, session_id: Optional[str] = None) -> tuple[Optional
     if sid:
         sess = session_manager.get_session(sid)
         if sess:
-            # 1. Instant check via LRU cache / memory / disk (0ms)
+            # 1. Instant check via LRU cache / memory / disk (0ms), ignoring unusable error stubs
             existing = sess.get_page(page_id)
-            if existing and (existing.get("scan_status") in ("AVAILABLE", "PARTIAL", "SUCCESS") or existing.get("safe_html")):
+            if existing and safe_view_engine._is_usable_cached_page(existing):
                 elapsed = round((time.perf_counter() - t_find_start) * 1000, 2)
                 print(f"[PERF] _find_page cache HIT for {page_id} in {elapsed}ms", flush=True)
                 return existing, sid
@@ -73,20 +73,20 @@ def _find_page(page_id: str, session_id: Optional[str] = None) -> tuple[Optional
     # Fallback: scan sessions in order (most recent first, checks memory + disk)
     active_sids = session_manager.list_active_sessions()
 
-    # Pass 1: Look for AVAILABLE/SUCCESS representations in recent sessions
+    # Pass 1: Look for usable representations in recent sessions
     for s in active_sids:
         sess = session_manager.get_session(s)
         if sess:
             existing = sess.get_page(page_id)
-            if existing and (existing.get("scan_status") in ("AVAILABLE", "PARTIAL", "SUCCESS") or existing.get("safe_html")):
+            if existing and safe_view_engine._is_usable_cached_page(existing):
                 return existing, s
             if page_id == "p_root" or page_id == sess.root_page_id:
                 root_p = sess.get_page(sess.root_page_id or "p_root")
-                if root_p:
+                if root_p and safe_view_engine._is_usable_cached_page(root_p):
                     return root_p, s
             if page_id in sess.discovered_pages and page_id != "p_root" and page_id != sess.root_page_id:
                 analyzed = safe_view_engine.analyze_page_on_demand(s, page_id)
-                if analyzed and (analyzed.get("scan_status") in ("AVAILABLE", "PARTIAL", "SUCCESS") or analyzed.get("safe_html")):
+                if analyzed and safe_view_engine._is_usable_cached_page(analyzed):
                     return analyzed, s
 
     # Pass 2: Fallback to any matching page representation even if partial/failed
@@ -104,18 +104,25 @@ def _find_page(page_id: str, session_id: Optional[str] = None) -> tuple[Optional
     return None, None
 
 
-def _build_page_payload(page: dict, page_id: str, sess_id: Optional[str]) -> dict:
-    """Builds clean, structured metadata dictionary for a page."""
-    safe_html = page.get("safe_html", "")
-    page_http_status = page.get("http_status", 200)
-    has_uninlined_stylesheets = bool(safe_html and "<link" in safe_html and "stylesheet" in safe_html.lower() and "data-pg-inlined=" not in safe_html)
+def _resanitize_if_needed(page: dict) -> str:
+    """Re-sanitizes stored DOM if missing, outdated, or containing un-inlined stylesheets."""
+    safe_html = page.get("safe_html", "") or ""
+    page_http_status = page.get("http_status") or 200
+    has_raw_dom = bool(page.get("dom_snapshot") or page.get("html_raw"))
+    has_uninlined_stylesheets = bool(
+        safe_html and "<link" in safe_html and "stylesheet" in safe_html.lower() and "data-pg-inlined=" not in safe_html
+    )
     needs_resanitize = (
         not safe_html
         or has_uninlined_stylesheets
+        or (has_raw_dom and 'data-pg-sanitizer-v="2"' not in safe_html)
+        or (has_raw_dom and 'data-pg-nav-v="3"' not in safe_html)
         or ("color-scheme: light !important" in safe_html)
         or ("font-family: -apple-system, BlinkMacSystemFont" in safe_html and "!important" in safe_html)
         or "pg-server-error-container" in safe_html
         or ("<pre>" in safe_html and "pg-api-container" not in safe_html and "{" in safe_html)
+        or (has_raw_dom and "non-navigating */" in safe_html)
+        or (has_raw_dom and html_sanitizer.is_unhandled_spa_noscript(safe_html, page_http_status))
     )
     if needs_resanitize:
         raw_source = page.get("dom_snapshot") or page.get("html_raw") or safe_html
@@ -136,6 +143,13 @@ def _build_page_payload(page: dict, page_id: str, sess_id: Optional[str]) -> dic
                     page["content_inventory"] = inv
             except Exception:
                 pass
+    return safe_html
+
+
+def _build_page_payload(page: dict, page_id: str, sess_id: Optional[str]) -> dict:
+    """Builds clean, structured metadata dictionary for a page."""
+    safe_html = _resanitize_if_needed(page)
+    page_http_status = page.get("http_status") or 200
 
     return {
         "page_id": page_id,
@@ -150,6 +164,9 @@ def _build_page_payload(page: dict, page_id: str, sess_id: Optional[str]) -> dic
         "content_inventory": page.get("content_inventory", {}),
         "elements_map": page.get("elements_map", []),
         "forms": page.get("forms", []),
+        "dom_diff": page.get("dom_diff"),
+        "network_forensics": page.get("network_forensics"),
+        "timeline": page.get("timeline", []),
         "suspicious_indicators": page.get("suspicious_indicators", []),
         "page_states": page.get("page_states", []),
         "security_status": page.get("security_status", {
@@ -324,6 +341,59 @@ def prioritize_page_endpoint(session_id: str, page_id: str):
         "page_id": page_id,
         "prioritized": promoted,
         "status": "PRIORITIZED",
+    }), 200
+
+
+@safe_view_bp.route("/session/<session_id>/navigate", methods=["POST", "OPTIONS"])
+def navigate_session_url_endpoint(session_id: str):
+    """
+    Direct browser-style URL navigation inside an active Safe Web View session.
+    Enforces strict Read-Only & SSRF restrictions and returns full page representation immediately.
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    data = request.get_json(silent=True) or {}
+    target_url = (data.get("url") or "").strip()
+    if not target_url:
+        return jsonify({"success": False, "error": "No URL provided"}), 400
+
+    device_profile = str(data.get("device_profile") or "desktop").lower()
+    if device_profile not in ("desktop", "tablet", "mobile"):
+        device_profile = "desktop"
+
+    force_retry = bool(data.get("retry", False))
+
+    nav_res = safe_view_engine.navigate_by_url(
+        session_id=session_id,
+        url=target_url,
+        device_profile=device_profile,
+        force_retry=force_retry,
+    )
+
+    if not nav_res.get("success"):
+        error_code = nav_res.get("error_code", "NAVIGATION_FAILED")
+        if error_code == "SESSION_EXPIRED":
+            return jsonify({"success": False, **nav_res}), 404
+        if nav_res.get("write_blocked") or nav_res.get("security_block") or error_code == "BLOCKED_BY_SSRF_GUARD":
+            return jsonify({"success": False, **nav_res}), 403
+        return jsonify({"success": False, **nav_res}), 422
+
+    page = nav_res["page"]
+    page_id = nav_res["page_id"]
+    payload = _build_page_payload(page, page_id, session_id)
+    return jsonify({
+        "success": True,
+        "available": True,
+        "cached": bool(nav_res.get("cached", False)),
+        "session_id": session_id,
+        "page_id": page_id,
+        "url": page.get("url"),
+        "status": page.get("http_status", 200),
+        "title": page.get("title", ""),
+        "representation": payload.get("safe_html", ""),
+        "page": payload,
+        **payload,
     }), 200
 
 
@@ -563,35 +633,7 @@ def render_safe_view_endpoint(page_id: str, session_id: Optional[str] = None):
 
     print(f"[SAFEVIEW] Viewer request: {found_sid or sid}/{page_id} Representation found -> Rendering page", flush=True)
 
-    safe_html = page.get("safe_html")
-    page_http_status = page.get("http_status", 200)
-    has_uninlined_stylesheets = bool(safe_html and "<link" in safe_html and "stylesheet" in safe_html.lower() and "data-pg-inlined=" not in safe_html)
-    needs_resanitize = (
-        not safe_html
-        or has_uninlined_stylesheets
-        or ("color-scheme: light !important" in safe_html)
-        or ("font-family: -apple-system, BlinkMacSystemFont" in safe_html and "!important" in safe_html)
-        or ("<pre>" in safe_html and "pg-api-container" not in safe_html)
-        or (page_http_status >= 400 and "pg-server-error-container" not in safe_html)
-        or ("[ERR_" in safe_html and "pg-server-error-container" not in safe_html)
-    )
-    if needs_resanitize:
-        raw_source = page.get("dom_snapshot") or page.get("html_raw") or safe_html
-        if raw_source:
-            url = page.get("url", "")
-            try:
-                res_html, _, _ = html_sanitizer.sanitize(
-                    raw_source,
-                    url,
-                    http_status=page_http_status,
-                    captured_stylesheets=page.get("captured_stylesheets"),
-                )
-                safe_html = res_html
-                page["safe_html"] = res_html
-            except Exception:
-                pass
-
-    safe_html = safe_html or "<html><body>Empty representation</body></html>"
+    safe_html = _resanitize_if_needed(page) or "<html><body>Empty representation</body></html>"
     resp = make_response(safe_html)
     resp.headers["Content-Type"] = "text/html; charset=utf-8"
     resp.headers["X-SafeView-Status"] = "AVAILABLE"

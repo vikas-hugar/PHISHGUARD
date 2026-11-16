@@ -87,6 +87,127 @@ MAX_PAGE_TEXT_CHARS = 100_000
 MAX_FORMS = 30
 MAX_EXTERNAL_RESOURCES = 100
 
+_SERIALIZE_DOM_JS = """() => {
+    try {
+        const VOID_TAGS = new Set([
+            'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+            'link', 'meta', 'param', 'source', 'track', 'wbr'
+        ]);
+        const RAW_TEXT_TAGS = new Set(['style', 'textarea', 'title', 'noscript']);
+
+        function escapeAttr(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function escapeText(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function serializeNode(node, depth) {
+            if (!node || depth > 80) return '';
+            const nodeType = node.nodeType;
+            if (nodeType === 3) {
+                return escapeText(node.nodeValue || '');
+            }
+            if (nodeType === 8) {
+                return '<!--' + (node.nodeValue || '') + '-->';
+            }
+            if (nodeType === 1) {
+                const tag = (node.localName || node.tagName).toLowerCase();
+                if (tag === 'script') {
+                    let res = '<script';
+                    const attrs = node.attributes;
+                    if (attrs) {
+                        for (let i = 0; i < attrs.length; i++) {
+                            res += ' ' + attrs[i].name + '="' + escapeAttr(attrs[i].value) + '"';
+                        }
+                    }
+                    res += '></script>';
+                    return res;
+                }
+
+                let res = '<' + tag;
+                const attrs = node.attributes;
+                if (attrs) {
+                    for (let i = 0; i < attrs.length; i++) {
+                        const attr = attrs[i];
+                        res += ' ' + attr.name + '="' + escapeAttr(attr.value) + '"';
+                    }
+                }
+                if (VOID_TAGS.has(tag)) {
+                    res += ' />';
+                    return res;
+                }
+                res += '>';
+
+                if (RAW_TEXT_TAGS.has(tag)) {
+                    res += node.textContent || '';
+                    res += '</' + tag + '>';
+                    return res;
+                }
+
+                // Declarative Shadow DOM for elements with open shadowRoot
+                if (node.shadowRoot) {
+                    res += '<template shadowrootmode="open" shadowroot="open">';
+                    for (let child = node.shadowRoot.firstChild; child; child = child.nextSibling) {
+                        res += serializeNode(child, depth + 1);
+                    }
+                    res += '</template>';
+                }
+
+                // Light DOM children
+                for (let child = node.firstChild; child; child = child.nextSibling) {
+                    res += serializeNode(child, depth + 1);
+                }
+
+                res += '</' + tag + '>';
+                return res;
+            }
+            return '';
+        }
+
+        if (!document.documentElement) return '';
+        const doctype = document.doctype ? 
+            '<!DOCTYPE ' + document.doctype.name + '>' : '<!DOCTYPE html>';
+        return doctype + '\\n' + serializeNode(document.documentElement, 0);
+    } catch (e) {
+        return '';
+    }
+}"""
+
+_EXTRACT_VISIBLE_TEXT_JS = """() => {
+    if (!document.body) return '';
+    const parts = [];
+    const hiddenTags = new Set(['script', 'style', 'noscript', 'template']);
+    function walkText(node, depth) {
+        if (!node || depth > 80 || parts.length > 5000) return;
+        if (node.nodeType === 3) {
+            const val = (node.nodeValue || '').trim();
+            if (val) parts.push(val);
+            return;
+        }
+        if (node.nodeType === 1) {
+            const tag = (node.localName || node.tagName).toLowerCase();
+            if (hiddenTags.has(tag)) return;
+            if (node.shadowRoot) {
+                for (let c = node.shadowRoot.firstChild; c; c = c.nextSibling) walkText(c, depth + 1);
+            }
+            for (let c = node.firstChild; c; c = c.nextSibling) walkText(c, depth + 1);
+        }
+    }
+    walkText(document.body, 0);
+    const deepText = parts.join(' ');
+    const lightText = document.body.innerText || '';
+    return deepText.length > lightText.length ? deepText : lightText;
+}"""
+
 # Try to import Playwright
 try:
     from playwright.async_api import async_playwright, TimeoutError as PwTimeout
@@ -772,32 +893,58 @@ async def _async_scan(
         except Exception as nav_exc:
             elapsed = round((time.perf_counter() - t_nav) * 1000, 1)
             nav_str = str(nav_exc)
-            failure_stage = "MAIN_DOCUMENT"
-            navigation_status = "PAGE_NAVIGATION_FAILED"
-            if any(k in nav_str.upper() for k in ("CERT", "SSL", "TLS", "AUTHORITY_INVALID")):
-                main_doc_error_type = "TLS_ERROR"
-                reason_code = "TLS_HANDSHAKE_FAILED"
-            elif any(k in nav_str.upper() for k in ("ERR_NAME_NOT_RESOLVED", "ENOTFOUND", "NAME_NOT_RESOLVED", "GAI_ERROR", "GETADDRINFO")):
-                main_doc_error_type = "DNS_FAILED"
-                reason_code = "DNS_RESOLUTION_FAILED"
-            elif any(k in nav_str.upper() for k in ("ERR_CONNECTION_TIMED_OUT", "ETIMEDOUT", "CONNECTION_TIMEOUT", "CONNECT TIMEOUT")):
-                main_doc_error_type = "CONNECTION_TIMEOUT"
-                reason_code = "CONNECTION_TIMEOUT"
-            elif any(k in nav_str.upper() for k in ("ECONNREFUSED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION")):
-                main_doc_error_type = "TARGET_UNREACHABLE"
-                reason_code = "CONNECTION_REFUSED"
-            elif any(k in nav_str.upper() for k in ("CRASH", "DISCONNECTED", "TARGET CLOSED")):
-                main_doc_error_type = "BROWSER_ERROR"
-                reason_code = "BROWSER_PROCESS_CRASH"
-            elif "Timeout" in nav_str:
-                main_doc_error_type = "PAGE_NAVIGATION_TIMEOUT"
-                reason_code = "TIMEOUT"
-            else:
-                main_doc_error_type = "NAVIGATION_ERROR"
-                reason_code = "NAVIGATION_ERROR"
-            main_doc_error = f"{main_doc_error_type}: {nav_str[:250]}"
-            security_warnings.append(main_doc_error)
-            print(f"[ERROR][NAVIGATION] stage=MAIN_DOCUMENT reason={reason_code} elapsed={elapsed}ms", flush=True)
+
+            # Automatic HTTPS upgrade fallback for unreachable/dropped plain HTTP endpoints
+            if url.startswith("http://") and any(k in nav_str.upper() for k in ("ERR_EMPTY_RESPONSE", "ERR_CONNECTION", "ECONNREFUSED", "RESET", "CLOSED", "TIMEOUT")):
+                https_url = "https://" + url[7:]
+                print(f"[UPGRADE] Plain HTTP navigation failed ({nav_str[:80]}). Retrying with HTTPS: {https_url}", flush=True)
+                try:
+                    t_upgrade = time.perf_counter()
+                    main_resp = await page.goto(
+                        https_url,
+                        timeout=main_navigation_timeout_ms,
+                        wait_until="commit",
+                    )
+                    load_time_ms = round((time.perf_counter() - t_upgrade) * 1000, 1)
+                    stage_timings["navigation_ms"] = load_time_ms
+                    if main_resp:
+                        try:
+                            http_status = main_resp.status
+                        except Exception:
+                            pass
+                    url = https_url
+                    main_doc_ok = True
+                    navigation_status = "SUCCESS"
+                except Exception as upg_exc:
+                    print(f"[UPGRADE] HTTPS retry also failed: {upg_exc}", flush=True)
+
+            if not main_doc_ok:
+                failure_stage = "MAIN_DOCUMENT"
+                navigation_status = "PAGE_NAVIGATION_FAILED"
+                if any(k in nav_str.upper() for k in ("CERT", "SSL", "TLS", "AUTHORITY_INVALID")):
+                    main_doc_error_type = "TLS_ERROR"
+                    reason_code = "TLS_HANDSHAKE_FAILED"
+                elif any(k in nav_str.upper() for k in ("ERR_NAME_NOT_RESOLVED", "ENOTFOUND", "NAME_NOT_RESOLVED", "GAI_ERROR", "GETADDRINFO")):
+                    main_doc_error_type = "DNS_FAILED"
+                    reason_code = "DNS_RESOLUTION_FAILED"
+                elif any(k in nav_str.upper() for k in ("ERR_CONNECTION_TIMED_OUT", "ETIMEDOUT", "CONNECTION_TIMEOUT", "CONNECT TIMEOUT")):
+                    main_doc_error_type = "CONNECTION_TIMEOUT"
+                    reason_code = "CONNECTION_TIMEOUT"
+                elif any(k in nav_str.upper() for k in ("ECONNREFUSED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION")):
+                    main_doc_error_type = "TARGET_UNREACHABLE"
+                    reason_code = "CONNECTION_REFUSED"
+                elif any(k in nav_str.upper() for k in ("CRASH", "DISCONNECTED", "TARGET CLOSED")):
+                    main_doc_error_type = "BROWSER_ERROR"
+                    reason_code = "BROWSER_PROCESS_CRASH"
+                elif "Timeout" in nav_str:
+                    main_doc_error_type = "PAGE_NAVIGATION_TIMEOUT"
+                    reason_code = "TIMEOUT"
+                else:
+                    main_doc_error_type = "NAVIGATION_ERROR"
+                    reason_code = "NAVIGATION_ERROR"
+                main_doc_error = f"{main_doc_error_type}: {nav_str[:250]}"
+                security_warnings.append(main_doc_error)
+                print(f"[ERROR][NAVIGATION] stage=MAIN_DOCUMENT reason={reason_code} elapsed={elapsed}ms", flush=True)
 
         # ── STEP 2: DOM Availability (Requirement 2 & 3) ───────────────────
         if main_doc_ok and not (ssrf_aborted and not redirect_limit_exceeded):
@@ -813,7 +960,7 @@ async def _async_scan(
 
             # Allow required JavaScript execution & wait for network activity to settle (faster in fast_mode)
             try:
-                net_timeout = 400 if fast_mode else min(dom_ready_timeout_ms, 1800)
+                net_timeout = 1500 if fast_mode else min(dom_ready_timeout_ms, 2800)
                 await page.wait_for_load_state("networkidle", timeout=net_timeout)
             except Exception:
                 pass
@@ -844,17 +991,65 @@ async def _async_scan(
             t_settle = time.perf_counter()
             print(f"[RENDER] Stabilization started", flush=True)
             try:
-                fn_timeout = 800 if fast_mode else min(render_timeout_ms, 2500)
+                fn_timeout = min(max(render_timeout_ms, 4500), 6000) if fast_mode else min(render_timeout_ms, 7000)
                 await page.wait_for_function(
                     """() => {
                         const b = document.body;
                         if (!b) return false;
                         if ((b.innerText || '').trim().length > 20) return true;
-                        const roots = document.querySelectorAll('#root, #app, #__next, main, [id*="app"], [id*="content"], article, section');
-                        for (const r of roots) {
-                            if (r.children && r.children.length > 0) return true;
+
+                        // Check deep visible text across shadow roots or custom elements
+                        let deepLen = 0;
+                        function walkLen(node) {
+                            if (!node || deepLen > 25) return;
+                            if (node.nodeType === 3) {
+                                deepLen += (node.nodeValue || '').trim().length;
+                                return;
+                            }
+                            if (node.nodeType === 1) {
+                                const tag = (node.localName || node.tagName).toLowerCase();
+                                if (tag === 'script' || tag === 'style' || tag === 'noscript') return;
+                                if (node.shadowRoot) {
+                                    for (let c = node.shadowRoot.firstChild; c && deepLen <= 25; c = c.nextSibling) walkLen(c);
+                                }
+                                for (let c = node.firstChild; c && deepLen <= 25; c = c.nextSibling) walkLen(c);
+                            }
                         }
-                        return Boolean(b.children && b.children.length > 0);
+                        walkLen(b);
+                        if (deepLen > 20) return true;
+
+                        // Empty SPA mount shells (e.g. <div id="root"></div> + <noscript>) must wait for hydration
+                        const spaRoots = document.querySelectorAll('#root, #app, #__next, #__nuxt, #svelte, app-root, [data-reactroot]');
+                        if (spaRoots.length > 0) {
+                            for (const r of spaRoots) {
+                                if (
+                                    r.children && r.children.length > 0 &&
+                                    ((r.innerText || '').trim().length > 0 || r.querySelector('form, input, img, svg, canvas, table, a[href], h1, h2, p, iframe'))
+                                ) {
+                                    return true;
+                                }
+                            }
+                            // If an empty SPA root is present, check if other custom elements/shadow roots hydrated elsewhere
+                            if (b.querySelector('entry-point, fluent-design-system-provider, [has-shadow], [data-hydrated]')) {
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        const semanticRoots = document.querySelectorAll('main, [id*="app"], [id*="content"], article, section');
+                        for (const r of semanticRoots) {
+                            if (
+                                r.children && r.children.length > 0 &&
+                                ((r.innerText || '').trim().length > 0 || r.querySelector('form, input, img, svg, canvas, table, a[href], h1, h2, p, iframe'))
+                            ) {
+                                return true;
+                            }
+                        }
+
+                        if (b.querySelector('form, input, img, svg, canvas, table, a[href], h1, h2, p, iframe')) {
+                            return true;
+                        }
+                        return (b.innerText || '').trim().length > 0;
                     }""",
                     timeout=fn_timeout,
                 )
@@ -862,11 +1057,31 @@ async def _async_scan(
                 pass
 
             # Bounded micro settle for layout and font stabilization (faster in fast_mode)
-            settle_s = 0.05 if fast_mode else min(render_timeout_ms / 1000.0, 0.4)
+            settle_s = 0.2 if fast_mode else min(render_timeout_ms / 1000.0, 0.45)
             try:
                 await asyncio.sleep(settle_s)
             except Exception:
                 pass
+
+            # Trigger scroll-reveal animations & lazy images before DOM extraction
+            try:
+                await page.evaluate("""() => {
+                    try {
+                        const totalHeight = document.body ? document.body.scrollHeight : 0;
+                        const vh = window.innerHeight || 800;
+                        if (totalHeight > vh) {
+                            const steps = Math.min(4, Math.ceil(totalHeight / vh));
+                            for (let i = 1; i <= steps; i++) {
+                                window.scrollTo(0, Math.round((totalHeight * i) / steps));
+                            }
+                            window.scrollTo(0, 0);
+                        }
+                    } catch(e) {}
+                }""")
+                await asyncio.sleep(0.15)
+            except Exception:
+                pass
+
             settle_ms = round((time.perf_counter() - t_settle) * 1000, 1)
             stage_timings["stabilization_ms"] = settle_ms
             print(f"[RENDER] Stabilization complete in {settle_ms}ms", flush=True)
@@ -926,17 +1141,55 @@ async def _async_scan(
                 except Exception:
                     pass
 
-                # Extract HTML & DOM snapshot
+                # Attempt safe auto-dismissal of intrusive cookie consent prompts
+                try:
+                    await page.evaluate("""() => {
+                        try {
+                            const cookieSelectors = [
+                                '#onetrust-accept-btn-handler',
+                                '#onetrust-reject-all-handler',
+                                '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+                                '#CybotCookiebotDialogBodyButtonAccept',
+                                '.cc-btn.cc-allow',
+                                '.cc-btn.cc-dismiss',
+                                '[aria-label*="cookie" i] button',
+                                '[id*="cookie" i] button',
+                                '[class*="cookie" i] button'
+                            ];
+                            for (const sel of cookieSelectors) {
+                                const btn = document.querySelector(sel);
+                                if (btn) {
+                                    btn.click();
+                                    break;
+                                }
+                            }
+                        } catch(e) {}
+                    }""")
+                except Exception:
+                    pass
+
+                # Extract HTML & DOM snapshot (Deep Declarative Shadow DOM serialization)
                 t_extract = time.perf_counter()
                 print(f"[DOM] Extraction started", flush=True)
                 try:
-                    content = await page.content()
+                    content = await page.evaluate(_SERIALIZE_DOM_JS)
+                    if not content or content.strip() == "" or content == "<html><head></head><body></body></html>":
+                        content = await page.content()
                     if content and content.strip() and content != "<html><head></head><body></body></html>":
                         html_raw = content[:MAX_HTML_CHARS]
                         dom_snapshot = html_raw
                         page_available = True
                         dom_available = True
                 except Exception as dom_exc:
+                    try:
+                        content = await page.content()
+                        if content and content.strip() and content != "<html><head></head><body></body></html>":
+                            html_raw = content[:MAX_HTML_CHARS]
+                            dom_snapshot = html_raw
+                            page_available = True
+                            dom_available = True
+                    except Exception:
+                        pass
                     security_warnings.append(f"DOM extraction warning: {str(dom_exc)[:120]}")
 
                 # Page Title
@@ -947,16 +1200,14 @@ async def _async_scan(
                 except Exception:
                     pass
 
-                # Visible Body Text
+                # Visible Body Text (deep traversal penetrating shadow roots)
                 try:
-                    visible_text = await page.evaluate(
-                        "() => document.body ? document.body.innerText : ''"
-                    )
+                    visible_text = await page.evaluate(_EXTRACT_VISIBLE_TEXT_JS)
                     visible_text = (visible_text or "")[:MAX_PAGE_TEXT_CHARS]
                 except Exception:
                     visible_text = ""
 
-                # Forms, Inputs, Iframes & Links — Single high-performance in-browser extraction (Requirement 16, 19, 21)
+                # Forms, Inputs, Iframes & Links — Single high-performance in-browser extraction across light DOM & Shadow roots
                 try:
                     dom_data = await page.evaluate("""() => {
                         const forms = [];
@@ -965,87 +1216,122 @@ async def _async_scan(
                         const otpFields = [];
                         const paymentFields = [];
                         const formActions = [];
-
-                        const formEls = document.querySelectorAll('form');
-                        for (const f of Array.from(formEls).slice(0, 20)) {
-                            const action = (f.getAttribute('action') || '').slice(0, 250);
-                            const method = (f.getAttribute('method') || 'get').toLowerCase();
-                            formActions.push(action);
-
-                            const inputTypes = [];
-                            const inps = f.querySelectorAll('input');
-                            for (const inp of Array.from(inps)) {
-                                const itype = (inp.getAttribute('type') || 'text').toLowerCase();
-                                const iname = (inp.getAttribute('name') || '');
-                                const iph = (inp.getAttribute('placeholder') || '');
-                                inputTypes.push(itype);
-                                const combined = (iname + ' ' + iph).toLowerCase();
-
-                                if (itype === 'password' || combined.includes('password')) {
-                                    passwordFields.push(iname || 'password');
-                                } else if (itype === 'email' || combined.includes('email') || combined.includes('user')) {
-                                    emailFields.push(iname || 'email');
-                                } else if (['otp', 'code', 'token', '2fa', 'mfa'].some(k => combined.includes(k))) {
-                                    otpFields.push(iname || 'otp');
-                                } else if (['card', 'cvv', 'cvc', 'exp', 'payment'].some(k => combined.includes(k))) {
-                                    paymentFields.push(iname || 'payment');
-                                }
-                            }
-                            forms.push({
-                                action: action,
-                                method: method,
-                                input_types: inputTypes,
-                                has_password: passwordFields.length > 0,
-                            });
-                        }
-
-                        const iframes = Array.from(document.querySelectorAll('iframe'))
-                            .slice(0, 15)
-                            .map(ifr => ifr.getAttribute('src') || '')
-                            .filter(Boolean)
-                            .map(s => s.slice(0, 250));
-
-                        // Comprehensive Link Extraction from Rendered DOM (Requirements 8, 13, 33)
+                        const iframes = [];
                         const links = [];
                         const seenHrefs = new Set();
-                        
-                        // 1. All anchor and area elements with href
-                        const anchorEls = document.querySelectorAll('a[href], area[href]');
-                        for (const a of Array.from(anchorEls).slice(0, 250)) {
-                            const rawHref = (a.getAttribute('href') || '').trim();
-                            const resolvedHref = (a.href || rawHref).trim();
-                            const targetHref = resolvedHref || rawHref;
-                            if (!targetHref || targetHref.startsWith('#') || targetHref.startsWith('javascript:') || targetHref.startsWith('mailto:') || targetHref.startsWith('tel:') || targetHref.startsWith('data:')) {
-                                continue;
-                            }
-                            if (!seenHrefs.has(targetHref)) {
-                                seenHrefs.add(targetHref);
-                                const text = (a.innerText || a.getAttribute('title') || a.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
-                                links.push({
-                                    href: targetHref.slice(0, 500),
-                                    raw_href: rawHref.slice(0, 500),
-                                    text: text.slice(0, 80),
-                                    tag: a.tagName.toLowerCase(),
-                                });
+
+                        function inspectNode(node, depth) {
+                            if (!node || depth > 80) return;
+                            if (node.nodeType === 1) {
+                                const tag = (node.localName || node.tagName).toLowerCase();
+
+                                // Forms
+                                if (tag === 'form' && forms.length < 25) {
+                                    const action = (node.getAttribute('action') || '').slice(0, 250);
+                                    const method = (node.getAttribute('method') || 'get').toLowerCase();
+                                    formActions.push(action);
+                                    const inputTypes = [];
+                                    function findInputs(fn, fdepth) {
+                                        if (!fn || fdepth > 30) return;
+                                        if (fn.nodeType === 1) {
+                                            const ftag = (fn.localName || fn.tagName).toLowerCase();
+                                            if (ftag === 'input') {
+                                                const itype = (fn.getAttribute('type') || 'text').toLowerCase();
+                                                const iname = (fn.getAttribute('name') || '');
+                                                const iph = (fn.getAttribute('placeholder') || '');
+                                                inputTypes.push(itype);
+                                                const combined = (iname + ' ' + iph).toLowerCase();
+                                                if (itype === 'password' || combined.includes('password')) {
+                                                    passwordFields.push(iname || 'password');
+                                                } else if (itype === 'email' || combined.includes('email') || combined.includes('user')) {
+                                                    emailFields.push(iname || 'email');
+                                                } else if (['otp', 'code', 'token', '2fa', 'mfa'].some(k => combined.includes(k))) {
+                                                    otpFields.push(iname || 'otp');
+                                                } else if (['card', 'cvv', 'cvc', 'exp', 'payment'].some(k => combined.includes(k))) {
+                                                    paymentFields.push(iname || 'payment');
+                                                }
+                                            }
+                                            if (fn.shadowRoot) {
+                                                for (let c = fn.shadowRoot.firstChild; c; c = c.nextSibling) findInputs(c, fdepth + 1);
+                                            }
+                                            for (let c = fn.firstChild; c; c = c.nextSibling) findInputs(c, fdepth + 1);
+                                        }
+                                    }
+                                    findInputs(node, 0);
+                                    forms.push({
+                                        action,
+                                        method,
+                                        input_types: inputTypes,
+                                        has_password: passwordFields.length > 0,
+                                    });
+                                }
+
+                                // Iframes
+                                if (tag === 'iframe' && iframes.length < 20) {
+                                    const src = (node.getAttribute('src') || '').slice(0, 250);
+                                    if (src) iframes.push(src);
+                                }
+
+                                // Anchors, area elements, and custom anchors with href
+                                const href = node.getAttribute('href');
+                                if ((tag === 'a' || tag === 'area' || tag.endsWith('-anchor') || href) && href && links.length < 350) {
+                                    const rawHref = href.trim();
+                                    let resolvedHref = '';
+                                    try {
+                                        resolvedHref = (node.href || (new URL(rawHref, document.baseURI || window.location.href)).href).trim();
+                                    } catch (_) {
+                                        resolvedHref = rawHref;
+                                    }
+                                    const targetHref = resolvedHref || rawHref;
+                                    if (targetHref && !targetHref.startsWith('#') && !targetHref.startsWith('javascript:') &&
+                                        !targetHref.startsWith('mailto:') && !targetHref.startsWith('tel:') && !targetHref.startsWith('data:')) {
+                                        if (!seenHrefs.has(targetHref)) {
+                                            seenHrefs.add(targetHref);
+                                            const text = (node.innerText || node.textContent || node.getAttribute('title') || node.getAttribute('aria-label') || '').trim().replace(/\\s+/g, ' ');
+                                            links.push({
+                                                href: targetHref.slice(0, 500),
+                                                raw_href: rawHref.slice(0, 500),
+                                                text: text.slice(0, 80),
+                                                tag,
+                                            });
+                                        }
+                                    }
+                                }
+
+                                // Client-side SPA navigation attributes (data-href, routerlink, etc.)
+                                const spaAttr = node.getAttribute('data-href') || node.getAttribute('data-to') || node.getAttribute('routerlink') || node.getAttribute('data-route') || node.getAttribute('data-url');
+                                if (spaAttr && links.length < 350) {
+                                    const route = spaAttr.trim();
+                                    if (route && !route.startsWith('#') && !route.startsWith('javascript:') && !seenHrefs.has(route)) {
+                                        seenHrefs.add(route);
+                                        let resolvedRoute = route;
+                                        try {
+                                            resolvedRoute = (new URL(route, document.baseURI || window.location.href)).href;
+                                        } catch (_) {}
+                                        const text = (node.innerText || node.textContent || node.getAttribute('title') || '').trim().replace(/\\s+/g, ' ');
+                                        links.push({
+                                            href: resolvedRoute.slice(0, 500),
+                                            raw_href: route.slice(0, 500),
+                                            text: text.slice(0, 80),
+                                            tag: 'spa_route',
+                                        });
+                                    }
+                                }
+
+                                // Traverse shadowRoot if present
+                                if (node.shadowRoot) {
+                                    for (let c = node.shadowRoot.firstChild; c; c = c.nextSibling) {
+                                        inspectNode(c, depth + 1);
+                                    }
+                                }
+                                // Traverse light DOM child nodes
+                                for (let c = node.firstChild; c; c = c.nextSibling) {
+                                    inspectNode(c, depth + 1);
+                                }
                             }
                         }
 
-                        // 2. Client-side SPA navigation attributes
-                        const spaEls = document.querySelectorAll('[data-href], [data-to], [routerlink], [data-route], [data-url]');
-                        for (const el of Array.from(spaEls).slice(0, 100)) {
-                            const route = (el.getAttribute('data-href') || el.getAttribute('data-to') || el.getAttribute('routerlink') || el.getAttribute('data-route') || el.getAttribute('data-url') || '').trim();
-                            if (!route || route.startsWith('#') || route.startsWith('javascript:') || seenHrefs.has(route)) {
-                                continue;
-                            }
-                            seenHrefs.add(route);
-                            const text = (el.innerText || el.getAttribute('title') || '').trim().replace(/\s+/g, ' ');
-                            links.push({
-                                href: route.slice(0, 500),
-                                raw_href: route.slice(0, 500),
-                                text: text.slice(0, 80),
-                                tag: 'spa_route',
-                            });
-                        }
+                        inspectNode(document.body || document.documentElement, 0);
 
                         return {
                             forms,

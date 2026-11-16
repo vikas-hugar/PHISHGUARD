@@ -109,22 +109,17 @@ async def make_browser_and_context(playwright: Any, device_profile: str = "deskt
         args=_CHROMIUM_ARGS,
     )
 
+    # Only set safe application-level headers; let Chromium manage Sec-Fetch-*,
+    # Sec-Ch-Ua-*, Accept, and Upgrade-Insecure-Requests per resource type so
+    # subresources (<script>, CSS, images, XHR) do not fail with ERR_INVALID_ARGUMENT.
     headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-        "Sec-Ch-Ua-Mobile": "?1" if profile["is_mobile"] else "?0",
-        "Sec-Ch-Ua-Platform": profile["platform"],
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
     }
 
     context = await browser.new_context(
         viewport=profile["viewport"],
         user_agent=profile["user_agent"],
+        locale="en-US",
         is_mobile=profile["is_mobile"],
         has_touch=profile["has_touch"],
         device_scale_factor=profile.get("device_scale_factor", 1),

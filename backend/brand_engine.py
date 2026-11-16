@@ -80,8 +80,87 @@ COMPANY_NAMES = {
     "tiktok": "ByteDance Ltd. (TikTok)",
     "att": "AT&T Inc.",
     "verizon": "Verizon Communications Inc.",
-    "tmobile": "T-Mobile US Inc."
+    "tmobile": "T-Mobile US Inc.",
+    "flipkart": "Flipkart Internet Pvt. Ltd.",
+    "walmart": "Walmart Inc.",
+    "ebay": "eBay Inc.",
+    "target": "Target Corporation",
+    "nike": "Nike Inc.",
+    "adidas": "Adidas AG",
+    "wordpress": "WordPress Foundation",
+    "coursera": "Coursera Inc.",
+    "reddit": "Reddit Inc.",
+    "slack": "Slack Technologies (Salesforce)",
+    "zoom": "Zoom Video Communications Inc.",
+    "phonepe": "PhonePe Private Limited",
+    "paytm": "One97 Communications (Paytm)",
+    "swiggy": "Swiggy Limited",
+    "zomato": "Zomato Limited",
+    "hotstar": "Disney+ Hotstar",
+    "myntra": "Myntra Designs Pvt. Ltd."
 }
+
+# Verified official primary and regional domains for prominent brands
+BRAND_OFFICIAL_DOMAINS: dict[str, set[str]] = {
+    "flipkart": {"flipkart.com", "flipkart.co.in", "flipkart.in", "myntra.com"},
+    "google": {"google.com", "google.co.in", "google.co.uk", "google.de", "google.fr", "google.ca", "google.com.au", "youtube.com", "gmail.com"},
+    "youtube": {"youtube.com", "youtu.be"},
+    "microsoft": {"microsoft.com", "live.com", "office.com", "outlook.com", "microsoftonline.com", "azure.com", "bing.com"},
+    "apple": {"apple.com", "icloud.com"},
+    "amazon": {"amazon.com", "amazon.in", "amazon.co.uk", "amazon.de", "amazon.ca", "amazon.co.jp", "aws.amazon.com"},
+    "netflix": {"netflix.com"},
+    "meta": {"meta.com", "facebook.com", "fb.com", "instagram.com", "whatsapp.com", "messenger.com"},
+    "facebook": {"facebook.com", "fb.com", "meta.com"},
+    "instagram": {"instagram.com"},
+    "whatsapp": {"whatsapp.com"},
+    "twitter": {"twitter.com", "x.com"},
+    "x": {"x.com", "twitter.com"},
+    "linkedin": {"linkedin.com"},
+    "paypal": {"paypal.com", "paypal.me"},
+    "adobe": {"adobe.com"},
+    "github": {"github.com"},
+    "gitlab": {"gitlab.com"},
+    "dropbox": {"dropbox.com"},
+    "cloudflare": {"cloudflare.com"},
+    "yahoo": {"yahoo.com"},
+    "chase": {"chase.com"},
+    "bankofamerica": {"bankofamerica.com"},
+    "wellsfargo": {"wellsfargo.com"},
+    "citibank": {"citi.com", "citibank.com"},
+    "citi": {"citi.com", "citibank.com"},
+    "sbi": {"sbi.co.in", "onlinesbi.sbi", "statebankofindia.com"},
+    "hdfc": {"hdfcbank.com", "hdfc.com"},
+    "icici": {"icicibank.com"},
+    "axisbank": {"axisbank.com"},
+    "kotak": {"kotak.com"},
+    "phonepe": {"phonepe.com"},
+    "paytm": {"paytm.com"},
+    "spotify": {"spotify.com"},
+    "steam": {"steampowered.com", "steamcommunity.com"},
+    "discord": {"discord.com", "discord.gg"},
+    "telegram": {"telegram.org", "t.me"},
+    "walmart": {"walmart.com"},
+    "ebay": {"ebay.com", "ebay.co.uk", "ebay.in"},
+    "target": {"target.com"},
+    "nike": {"nike.com"},
+    "adidas": {"adidas.com"},
+    "wordpress": {"wordpress.org", "wordpress.com"},
+    "coursera": {"coursera.org"},
+    "reddit": {"reddit.com"},
+    "slack": {"slack.com"},
+    "zoom": {"zoom.us"},
+    "swiggy": {"swiggy.com"},
+    "zomato": {"zomato.com"},
+    "hotstar": {"hotstar.com"},
+    "myntra": {"myntra.com"},
+}
+
+_TWO_LEVEL_TLDS = frozenset([
+    "co.in", "co.uk", "com.au", "co.jp", "co.kr", "co.za", "co.nz",
+    "com.br", "com.mx", "com.sg", "com.tr", "org.in", "net.in", "gov.in",
+    "edu.in", "org.uk", "me.uk", "ac.uk", "gov.uk", "nic.in", "com.cn",
+    "net.cn", "org.cn", "gov.cn", "co.id", "co.th", "com.hk"
+])
 
 # Generic category and security keywords that must NOT be misreported as brands
 GENERIC_SUSPICIOUS_KEYWORDS = frozenset([
@@ -340,13 +419,45 @@ def longest_common_subsequence_ratio(s1: str, s2: str) -> float:
     return round(lcs_len / max(m, n), 4)
 
 
-def extract_apex_label(domain: str) -> str:
-    """Extract apex label e.g., 'paypa1-update.com' -> 'paypa1-update'."""
+def extract_registered_domain(domain: str) -> str:
+    """Extract registrable root domain e.g., 'www.flipkart.co.in' -> 'flipkart.co.in'."""
     domain = re.sub(r"^www\.", "", domain.lower().strip())
     parts = domain.split(".")
+    if len(parts) >= 3 and f"{parts[-2]}.{parts[-1]}" in _TWO_LEVEL_TLDS:
+        return ".".join(parts[-3:])
+    if len(parts) >= 2:
+        return ".".join(parts[-2:])
+    return domain
+
+
+def extract_apex_label(domain: str) -> str:
+    """Extract apex label e.g., 'www.flipkart.co.in' -> 'flipkart'."""
+    domain = re.sub(r"^www\.", "", domain.lower().strip())
+    parts = domain.split(".")
+    if len(parts) >= 3 and f"{parts[-2]}.{parts[-1]}" in _TWO_LEVEL_TLDS:
+        return parts[-3]
     if len(parts) >= 2:
         return parts[-2]
     return domain
+
+
+def is_official_brand_domain(brand: str, domain: str) -> bool:
+    """Check if domain is verified official infrastructure for this brand."""
+    reg = extract_registered_domain(domain)
+    brand_key = brand.lower().strip()
+    if brand_key in BRAND_OFFICIAL_DOMAINS:
+        if reg in BRAND_OFFICIAL_DOMAINS[brand_key]:
+            return True
+        for od in BRAND_OFFICIAL_DOMAINS[brand_key]:
+            if reg == od or reg.endswith("." + od):
+                return True
+    if brand_key in COMPANY_NAMES or brand_key in _BRAND_SET:
+        apex = extract_apex_label(domain)
+        if apex == brand_key:
+            tld = domain.split(".")[-1]
+            if tld in ("com", "org", "net", "in", "io", "co", "app", "edu", "gov", "ai", "dev"):
+                return True
+    return False
 
 
 def find_generic_keywords(text: str) -> list[str]:
@@ -374,7 +485,7 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     _load_brand_data()
     apex = extract_apex_label(domain)
     apex_clean = re.sub(r"[^a-z0-9]", "", apex)
-    full_url_lower = url.lower()
+    reg_domain = extract_registered_domain(domain)
 
     # Identify generic keywords present
     generic_kws = find_generic_keywords(domain)
@@ -395,10 +506,15 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     if not apex_clean:
         return result
 
-    # Check for deceptive modifiers
+    # If the domain's apex label itself is an official brand on standard/official TLD, it is legitimate
+    if (apex_clean in _BRAND_SET or apex_clean in COMPANY_NAMES) and is_official_brand_domain(apex_clean, domain):
+        return result
+
+    # Check for deceptive modifiers strictly within the apex label or subdomain
+    # NEVER inspect the URL path for domain impersonation modifiers!
     detected_modifier = None
     for mod in _DECEPTIVE_MODIFIERS:
-        if mod in apex_clean or mod in full_url_lower:
+        if mod in apex_clean and mod != apex_clean:
             detected_modifier = mod
             break
     result["has_modifier"] = bool(detected_modifier)
@@ -408,10 +524,14 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     # 0. Misleading Subdomain Brand Impersonation (e.g. paypal.com.attacker.com)
     # -------------------------------------------------------------
     domain_parts = domain.split(".")
-    if len(domain_parts) > 2:
-        subdomain_part = ".".join(domain_parts[:-2])
+    reg_parts = reg_domain.split(".")
+    if len(domain_parts) > len(reg_parts):
+        subdomain_part = ".".join(domain_parts[:-len(reg_parts)])
         for brand in COMPANY_NAMES.keys():
             if len(brand) >= 4 and brand in subdomain_part:
+                # If registered domain is official for this brand, it is NOT an attack (e.g. accounts.google.com)
+                if is_official_brand_domain(brand, domain):
+                    continue
                 company = COMPANY_NAMES.get(brand, brand.capitalize())
                 result.update({
                     "detected": True,
@@ -420,7 +540,7 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
                     "similarity": 0.95,
                     "confidence": 97.0,
                     "impersonation_type": "Misleading Subdomain Brand Impersonation",
-                    "reason": f"Deceptive subdomain embedding official brand '{company}' on unauthorized apex domain '{domain_parts[-2]}.{domain_parts[-1]}'"
+                    "reason": f"Deceptive subdomain embedding official brand '{company}' on unauthorized apex domain '{reg_domain}'"
                 })
                 return result
 
@@ -430,13 +550,29 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     for brand in _BRANDS:
         if len(brand) < 3:
             continue
-        if brand in apex_clean:
-            # If the apex is exactly the brand name without modifier,
-            # this is likely the legitimate brand domain itself
-            if apex_clean == brand and not detected_modifier:
-                continue
 
-            if detected_modifier or apex_clean != brand:
+        # If this is the official domain of the brand, skip entirely
+        if is_official_brand_domain(brand, domain) or apex_clean == brand:
+            continue
+
+        # Check if brand is embedded in apex
+        if brand in apex_clean:
+            # Short brand filter: 3-letter brands must be hyphen/digit delimited (e.g. 'ato-login', not 'ycombinator')
+            if len(brand) < 4:
+                tokens = re.split(r"[-_0-9.]", apex)
+                if brand not in tokens:
+                    continue
+
+            # Check if this is an embedded modifier or attached brand
+            is_embedded = False
+            if detected_modifier and (brand + detected_modifier in apex_clean or detected_modifier + brand in apex_clean):
+                is_embedded = True
+            elif "-" in apex and any(brand == t for t in apex.split("-")):
+                is_embedded = True
+            elif len(brand) >= 5 and apex_clean != brand and any(mod in apex_clean for mod in _DECEPTIVE_MODIFIERS):
+                is_embedded = True
+
+            if is_embedded:
                 company = COMPANY_NAMES.get(brand, brand.capitalize())
                 conf = 98.0 if detected_modifier else 90.0
                 result.update({
@@ -459,6 +595,8 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     for cand in candidate_tokens:
         if cand in BRAND_PHONETIC_ALIASES:
             matched_brand = BRAND_PHONETIC_ALIASES[cand]
+            if is_official_brand_domain(matched_brand, domain) or apex_clean == matched_brand:
+                continue
             company = COMPANY_NAMES.get(matched_brand, matched_brand.capitalize())
             result.update({
                 "detected": True,
@@ -474,21 +612,26 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
     # -------------------------------------------------------------
     # 3. Repeated Characters Normalization (e.g. aaappllle -> apple)
     # -------------------------------------------------------------
-    for brand in _BRANDS:
-        if len(brand) < 4:
-            continue
-        if red_2 == brand or red_1 == brand:
-            company = COMPANY_NAMES.get(brand, brand.capitalize())
-            result.update({
-                "detected": True,
-                "brand": brand,
-                "company": company,
-                "similarity": 0.96,
-                "confidence": 97.5,
-                "impersonation_type": "Repeated Character Impersonation",
-                "reason": f"Repeated character impersonation targeting {company}"
-            })
-            return result
+    # CRITICAL FIX: Only trigger if characters were ACTUALLY repeated/squashed (red_1 != apex_clean or red_2 != apex_clean)
+    # AND the original apex was not already the brand!
+    if (red_2 != apex_clean or red_1 != apex_clean):
+        for brand in _BRANDS:
+            if len(brand) < 4:
+                continue
+            if apex_clean == brand or is_official_brand_domain(brand, domain):
+                continue
+            if red_2 == brand or red_1 == brand:
+                company = COMPANY_NAMES.get(brand, brand.capitalize())
+                result.update({
+                    "detected": True,
+                    "brand": brand,
+                    "company": company,
+                    "similarity": 0.96,
+                    "confidence": 97.5,
+                    "impersonation_type": "Repeated Character Impersonation",
+                    "reason": f"Repeated character impersonation targeting {company}"
+                })
+                return result
 
     # -------------------------------------------------------------
     # 4. Multi-Metric Similarity Scoring across All Brands
@@ -520,8 +663,14 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
         ]
 
         for brand in candidates:
+            # Skip if this token is the legitimate brand itself
+            if token == brand or apex_clean == brand or is_official_brand_domain(brand, domain):
+                continue
+
             b_len = len(brand)
             d_dist = damerau_levenshtein_distance(token, brand)
+            if d_dist == 0:
+                continue
             max_len = max(t_len, b_len)
             d_sim = 1.0 - (d_dist / max_len)
             jw_sim = jaro_winkler_similarity(token, brand)
@@ -556,6 +705,8 @@ def analyze_brand_impersonation(url: str, domain: str) -> dict:
 
     # Threshold for brand impersonation alert: >= 0.86
     if best_sim >= 0.86 and best_brand:
+        if is_official_brand_domain(best_brand, domain) or apex_clean == best_brand:
+            return result
         company = COMPANY_NAMES.get(best_brand, best_brand.capitalize())
         conf = round(best_sim * 100, 1)
         if detected_modifier:

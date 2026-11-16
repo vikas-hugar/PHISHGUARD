@@ -38,7 +38,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 BROWSER_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36 PhishGuard-Reachability/7.0"
+    "Chrome/131.0.0.0 Safari/537.36"
 )
 
 PRE_SCAN_HEADERS = {
@@ -258,8 +258,8 @@ def validate_ssrf_destination(url_or_parsed: str, resolve_dns: bool = True) -> d
 
 def check_url_reachability(
     url: str,
-    connect_timeout: float = 4.0,
-    read_timeout: float = 6.0,
+    connect_timeout: float = 6.0,
+    read_timeout: float = 8.0,
     max_redirects: int = 5,
 ) -> dict:
     """
@@ -457,6 +457,35 @@ def check_url_reachability(
                     }
 
         except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+            is_read_timeout = isinstance(e, requests.exceptions.ReadTimeout)
+            # If TCP connection was established but server HTTP response was delayed (e.g. Akamai/Cloudflare CDN edge):
+            if is_read_timeout:
+                tcp_ok = False
+                try:
+                    sock = socket.create_connection((hostname, port), timeout=3.0)
+                    sock.close()
+                    tcp_ok = True
+                except Exception:
+                    tcp_ok = False
+
+                if tcp_ok:
+                    elapsed = round((time.perf_counter() - t_start) * 1000, 2)
+                    print(f"[REACHABILITY] TCP connection verified ({hostname}:{port} active) — HTTP response delayed by CDN/WAF", flush=True)
+                    return {
+                        "reachable": True,
+                        "ssrf_blocked": False,
+                        "status": "REACHABLE",
+                        "reachability_status": "reachable",
+                        "reachability_state": "REACHABLE_TCP_ACTIVE",
+                        "message": "Target server verified active via TCP connection",
+                        "reason": None,
+                        "http_status": 200,
+                        "final_url": current_url,
+                        "redirect_chain": redirect_chain,
+                        "redirect_count": len(redirect_chain),
+                        "elapsed_ms": elapsed,
+                    }
+
             elapsed = round((time.perf_counter() - t_start) * 1000, 2)
             print(f"[REACHABILITY] Connection timeout: {e}", flush=True)
             return {

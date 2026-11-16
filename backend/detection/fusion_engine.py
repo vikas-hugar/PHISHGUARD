@@ -23,6 +23,7 @@ and Visual Phishing Analysis into a mathematically sound, calibrated verdict:
 from __future__ import annotations
 import math
 import time
+from urllib.parse import urlparse
 from typing import Any
 
 # ── Fusion Configuration ───────────────────────────────────────────────────
@@ -247,6 +248,7 @@ def fuse(
     visual_analysis: dict | None = None,
     dom_behavior: dict | None = None,
     is_whitelisted: bool = False,
+    url: str | None = None,
 ) -> dict:
     """
     Multi-layer evidence fusion engine for V7.0 Unified Engine.
@@ -361,11 +363,28 @@ def fuse(
 
     if ds.get("available"):
         evidence_count += 1
+        has_ext_action = bool(
+            html_ev.get("external_form_action") or
+            dom_ev.get("external_form_action") or
+            (dom_behavior or {}).get("form_exfiltration", {}).get("suspicious_exfil_targets")
+        )
+        has_dynamic_pw = bool((dom_behavior or {}).get("temporal_analysis", {}).get("dynamic_password_injection"))
+        has_brand_attack = bool(brand_sim >= cfg["brand_zero_day_min_sim"] or va.get("brand_impersonation_visual"))
+        has_deceptive_ui = bool(
+            (dom_behavior or {}).get("ui_deception", {}).get("fake_dialog_detected") or
+            (dom_behavior or {}).get("ui_deception", {}).get("hidden_overlay_detected") or
+            (dom_behavior or {}).get("script_evasion", {}).get("anti_debugging_detected")
+        )
+        is_suspicious_credential_context = has_ext_action or has_dynamic_pw or has_brand_attack or has_deceptive_ui
+
         if ev_vector["credential_context"] > 0:
-            ds_risk_bonus += cfg["credential_form_bonus"]
-            positive_signals.append("Active credential collection fields confirmed in DOM")
-            high_signals.append("credential_form_detected")
-            strong_evidence_count += 1
+            if is_suspicious_credential_context:
+                ds_risk_bonus += cfg["credential_form_bonus"]
+                positive_signals.append("Credential collection fields operating in deceptive/exfiltrating context")
+                high_signals.append("credential_form_detected")
+                strong_evidence_count += 1
+            else:
+                negative_signals.append("Standard authentication form with verified same-origin submission")
 
         if html_ev.get("external_form_action") or dom_ev.get("external_form_action"):
             ds_risk_bonus += cfg["external_form_action_bonus"]
@@ -378,7 +397,7 @@ def fuse(
             ds_risk_bonus += min(sus_scripts * cfg["suspicious_script_bonus_per"], cfg["max_script_bonus"])
             positive_signals.append(f"Suspicious obfuscated JavaScript patterns detected ({sus_scripts})")
 
-        if html_ev.get("login_page_detected") or dom_ev.get("login_form"):
+        if (html_ev.get("login_page_detected") or dom_ev.get("login_form")) and is_suspicious_credential_context:
             ds_risk_bonus += cfg["login_page_bonus"]
 
     # Signal compilation: Visual Analysis
@@ -504,12 +523,21 @@ def fuse(
 
     if ro_prob is not None and cnn_prob is not None:
         if ev_vector["model_disagreement"]:
-            neural_risk = (cnn_prob * 0.40 + ro_prob * 0.40)
-            ensemble = (
-                neural_risk * 0.45 +
-                heur_score * 0.30 +
-                brand_pct * 0.25
-            )
+            # Disagreement arbitration:
+            # Case 1: RoBERTa indicates strong phishing semantics (ro_prob >= 75) and heuristics corroborate (heur >= 25)
+            # Character CNN missed novel patterns, but NLP transformer + structural heuristics caught the attack
+            if ro_prob >= 75.0 and heur_score >= 25.0:
+                ensemble = (ro_prob * 0.55) + (heur_score * 0.45)
+            # Case 2: CNN indicates high phishing (e.g. stackoverflow) but RoBERTa semantic model confirms safe standard English (ro_prob <= 10) and heur is clean (<= 15)
+            # Character model had false positive on clean path, but NLP transformer confirms genuine clean content
+            elif ro_prob <= 10.0 and heur_score <= 15.0:
+                ensemble = (ro_prob * 0.60) + (cnn_prob * 0.15) + (heur_score * 0.25)
+            # Case 3: CNN indicates strong phishing (cnn_prob >= 80) and heuristics corroborate (heur >= 25), e.g. IP host, @ masking
+            elif cnn_prob >= 80.0 and heur_score >= 25.0:
+                ensemble = (cnn_prob * 0.55) + (heur_score * 0.45)
+            else:
+                # Moderate balanced blend
+                ensemble = (cnn_prob * 0.35) + (ro_prob * 0.40) + (heur_score * 0.25)
         else:
             ensemble = (
                 cnn_prob * cfg["cnn_weight"] +
@@ -544,6 +572,19 @@ def fuse(
     elif va.get("brand_impersonation_visual"):
         ensemble = max(ensemble, 88.0)
 
+    # Bare Root Domain FP Protection:
+    # If a URL is a bare apex/root domain on a standard clean TLD with 0 heuristics, 0 brand spoofing, and 0 deep scan bonus:
+    # Character/subword models can have high variance on short names (e.g. w3.org, ruby-lang.org).
+    # Suppress false positives when no deceptive indicators exist.
+    target_u = url or (threat_intel or {}).get("url") or (heuristics or {}).get("url")
+    if target_u and heur_score == 0 and brand_pct == 0 and ds_risk_bonus == 0:
+        parsed = urlparse(target_u if "://" in target_u else "https://" + target_u)
+        path_clean = (parsed.path or "").strip("/")
+        if not path_clean and not parsed.query:
+            tld = (parsed.netloc or "").split(".")[-1].lower()
+            if tld in ("org", "com", "net", "edu", "gov", "io", "dev", "app", "technology"):
+                ensemble = min(ensemble, 18.0)
+
     risk_score = _clamp(ensemble + ds_risk_bonus)
 
     # ── 5. Classification Decision Logic ───────────────────────────────────
@@ -560,19 +601,17 @@ def fuse(
         is_zero_day = True
     elif ev_vector.get("dom_behavior_score", 0.0) >= 60.0 and strong_evidence_count >= 1:
         is_zero_day = True
-    elif risk_score >= cfg["zero_day_min_risk"] and n_independent_high >= cfg["zero_day_min_signals"] and not ev_vector["model_disagreement"]:
+    elif risk_score >= cfg["zero_day_min_risk"] and (n_independent_high >= cfg["zero_day_min_signals"] or (heur_score >= 45 and max(cnn_prob or 0, ro_prob or 0) >= 65.0)):
         is_zero_day = True
 
     if is_zero_day:
         classification = "ZERO_DAY_PHISHING"
         detection_type = "ZERO_DAY"
         risk_score = max(risk_score, 75.0)
-    elif risk_score >= cfg["suspicious_min_risk"] or ev_vector["model_disagreement"]:
+    elif risk_score >= cfg["suspicious_min_risk"] or (ev_vector["model_disagreement"] and strong_evidence_count > 0):
         classification = "SUSPICIOUS"
         detection_type = "SUSPICIOUS"
-        if ev_vector["model_disagreement"]:
-            risk_score = _clamp(risk_score, 45.0, 74.0)
-    elif risk_score < 30.0 and n_independent_high == 0:
+    elif risk_score < 35.0 and strong_evidence_count == 0:
         classification = "LEGITIMATE"
         detection_type = "LEGITIMATE"
     else:

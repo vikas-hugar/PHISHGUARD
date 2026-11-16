@@ -333,6 +333,535 @@ class TestSafeViewRenderingScenarios(unittest.TestCase):
             self.assertTrue(reach["ssrf_blocked"])
             self.assertEqual(reach["reachability_state"], "SSRF_BLOCKED")
 
+    # =========================================================================
+    # SCENARIO Q: Scroll-Reveal, Preloaders, Noscript Styles, Lazy Images & Async CSS
+    # =========================================================================
+    def test_scenario_q_scroll_reveal_and_preloader_visibility(self):
+        """Scroll-reveal classes (e.g. .reveal, custom .hero-fade) and preloaders do not blank out the page."""
+        html_input = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                .hero-fade { opacity: 0; transform: translateY(40px); }
+                .hero-fade.is-visible { opacity: 1; transform: translateY(0); }
+                .modal-overlay { opacity: 0; }
+                .modal-overlay.show { opacity: 1; }
+            </style>
+        </head>
+        <body>
+            <div id="preloader">Loading...</div>
+            <header class="reveal"><h1>KSRTC Portal</h1></header>
+            <section class="hero-fade"><p>Main content</p></section>
+        </body>
+        </html>
+        """
+        clean_html, _, _ = html_sanitizer.sanitize(html_input, "https://www.ksrtc.in/", http_status=200)
+        self.assertIn("data-pg-sanitizer-v=\"2\"", clean_html)
+        self.assertIn("pg-reveal-overrides", clean_html)
+        self.assertIn(".hero-fade", clean_html)
+        self.assertNotIn(".modal-overlay", clean_html.split("pg-reveal-overrides")[1])
+        self.assertIn("#preloader", clean_html)
+        self.assertIn(".reveal", clean_html)
+
+    def test_scenario_r_noscript_styles_and_empty_body_fallback(self):
+        """Unwraps <noscript><style> rules and empty-body <noscript> messages without leaving <noscript> tags."""
+        bbc_style_html = """
+        <html><body>
+            <img src="/placeholder.png" class="hide-when-no-script">
+            <img src="/real-news.jpg">
+            <noscript><style>.hide-when-no-script { visibility: hidden; }</style></noscript>
+            <p>Breaking news article headline with sufficient text content.</p>
+        </body></html>
+        """
+        clean_bbc, _, _ = html_sanitizer.sanitize(bbc_style_html, "https://www.bbc.com/", http_status=200)
+        self.assertNotIn("<noscript", clean_bbc.lower())
+        self.assertIn(".hide-when-no-script { visibility: hidden; }", clean_bbc)
+
+        cf_html = """
+        <html><body>
+            <div class="main-wrapper"><div class="main-content"></div></div>
+            <noscript>Enable JavaScript and cookies to continue</noscript>
+        </body></html>
+        """
+        clean_cf, _, _ = html_sanitizer.sanitize(cf_html, "https://stackoverflow.com/", http_status=403)
+        self.assertNotIn("<noscript", clean_cf.lower())
+        self.assertIn("Enable JavaScript and cookies to continue", clean_cf)
+
+    def test_scenario_s_lazy_images_comments_and_svg_fragments(self):
+        """Promotes lazy data-src images, skips commented <link>, and preserves SVG #fragment urls."""
+        html_input = """
+        <html>
+        <head>
+            <!-- <link rel="stylesheet" href="https://dead.example.invalid/old.css"> -->
+        </head>
+        <body>
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-src="/img/bus.jpg" data-srcset="/img/bus-2x.jpg 2x">
+            <svg><path style="fill: url(#myGrad)"></path></svg>
+        </body>
+        </html>
+        """
+        clean_html, _, _ = html_sanitizer.sanitize(html_input, "https://example.com/", http_status=200)
+        self.assertNotIn("dead.example.invalid", clean_html)
+        self.assertIn('src="https://example.com/img/bus.jpg"', clean_html)
+        self.assertIn('srcset="https://example.com/img/bus-2x.jpg 2x"', clean_html)
+        self.assertIn("url(#myGrad)", clean_html)
+
+    def test_scenario_t_stale_cached_page_resanitizes_to_v2(self):
+        """Cached page representations missing v2 sanitizer marker automatically re-sanitize from dom_snapshot."""
+        stale_page = {
+            "page_id": "p_root",
+            "url": "https://example.com/",
+            "http_status": 200,
+            "dom_snapshot": "<html><body><section class='reveal'>Visible Now</section></body></html>",
+            "safe_html": "<html><head><style id='pg-safe-viewer-styles'></style></head><body><section class='reveal'>Old</section></body></html>",
+        }
+        payload = _build_page_payload(stale_page, "p_root", "sess_v2")
+        self.assertIn('data-pg-sanitizer-v="2"', payload["safe_html"])
+        self.assertIn("Visible Now", payload["safe_html"])
+
+    def test_scenario_u_spa_noscript_boilerplate_replaced_with_spa_notice(self):
+        """Unhydrated CRA/Vue/Vite SPAs replace raw 'enable JavaScript' boilerplate with clean SPA notice."""
+        cra_html = """<!doctype html>
+        <html lang="en">
+        <head><title>KSRTC Awatar 4.0</title><style>body{margin:0;color:#111;}</style></head>
+        <body>
+            <noscript>You need to enable JavaScript to run this app.</noscript>
+            <div id="root" class="rootLayout"></div>
+        </body>
+        </html>"""
+        clean_cra, _, inv_cra = html_sanitizer.sanitize(cra_html, "https://awatar4.ksrtc.in/", http_status=200)
+        self.assertNotIn("<noscript", clean_cra.lower())
+        self.assertNotIn("You need to enable JavaScript to run this app.", clean_cra)
+        self.assertIn('<div class="pg-spa-notice">', clean_cra)
+        self.assertIn("KSRTC Awatar 4.0", clean_cra)
+        self.assertEqual(inv_cra["text_characters"], 0)
+
+        vue_html = """<html><head><title>Vue Portal</title></head><body>
+            <noscript>We're sorry but app doesn't work properly without JavaScript enabled. Please enable it to continue.</noscript>
+            <div id="app"></div>
+        </body></html>"""
+        clean_vue, _, inv_vue = html_sanitizer.sanitize(vue_html, "https://vue.example.com/", http_status=200)
+        self.assertNotIn("doesn't work properly without JavaScript", clean_vue)
+        self.assertIn('<div class="pg-spa-notice">', clean_vue)
+        self.assertEqual(inv_vue["text_characters"], 0)
+
+        stale_spa_page = {
+            "page_id": "p_1",
+            "url": "https://awatar4.ksrtc.in/",
+            "http_status": 200,
+            "dom_snapshot": cra_html,
+            "safe_html": '<html><head><style id="pg-safe-viewer-styles" data-pg-sanitizer-v="2"></style></head><body><div id="pg-safe-banner"><div>PHISHGUARD</div><div>TARGET</div></div>You need to enable JavaScript to run this app.<div id="root"></div></body></html>',
+            "content_inventory": {"text_characters": 63, "forms": 0, "links": 0},
+        }
+        upgraded = _build_page_payload(stale_spa_page, "p_1", "sess_spa")
+        self.assertIn('<div class="pg-spa-notice">', upgraded["safe_html"])
+        self.assertNotIn("You need to enable JavaScript to run this app.", upgraded["safe_html"])
+        self.assertEqual(upgraded["content_inventory"]["text_characters"], 0)
+
+    def test_scenario_v_vm_browser_no_forbidden_fetch_headers(self):
+        """VM Playwright context must not inject Sec-Fetch-*/Sec-Ch-Ua-*/Upgrade-Insecure-Requests headers that break subresources."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        agent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "analysis_agent"))
+        if agent_dir not in sys.path:
+            sys.path.insert(0, agent_dir)
+        from browser import make_browser_and_context
+
+        captured_kwargs = {}
+        mock_context = AsyncMock()
+        async def _fake_new_context(**kwargs):
+            captured_kwargs.update(kwargs)
+            return mock_context
+        mock_browser = MagicMock()
+        mock_browser.new_context = _fake_new_context
+        mock_pw = MagicMock()
+        mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
+
+        asyncio.run(make_browser_and_context(mock_pw, device_profile="desktop"))
+        extra_headers = {k.lower(): v for k, v in (captured_kwargs.get("extra_http_headers") or {}).items()}
+        for forbidden in ("sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "sec-fetch-user", "upgrade-insecure-requests", "sec-ch-ua"):
+            self.assertNotIn(forbidden, extra_headers)
+
+    def test_scenario_w_read_only_form_and_link_sanitization(self):
+        """Sanitizer locks write controls, preserves clickable links/hashes, marks downloads and unsupported schemes."""
+        html_input = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <form action="/login" method="POST">
+                <input type="text" name="email">
+                <textarea name="notes">hello</textarea>
+                <select name="role"><option value="user">User</option></select>
+                <button type="submit">Submit</button>
+            </form>
+            <a href="/about"><button>About Us</button></a>
+            <a href="#pricing">Pricing Section</a>
+            <a href="/files/guide.pdf" download>Download PDF</a>
+            <a href="mailto:help@example.com">Email Support</a>
+        </body>
+        </html>
+        """
+        safe_html, _, _ = html_sanitizer.sanitize(html_input, "https://example.com/")
+
+        self.assertIn('action="javascript:void(0)"', safe_html)
+        self.assertIn('onsubmit="return false;"', safe_html)
+        self.assertNotIn('action="/login"', safe_html)
+        self.assertIn("<textarea", safe_html)
+        self.assertIn("<select", safe_html)
+        self.assertRegex(safe_html, r'<textarea[^>]*readonly="true"[^>]*disabled="true"')
+        self.assertRegex(safe_html, r'<select[^>]*readonly="true"[^>]*disabled="true"')
+        self.assertIn('data-pg-href="https://example.com/about"', safe_html)
+        self.assertIn('data-pg-hash="#pricing"', safe_html)
+        self.assertIn('data-pg-download="true"', safe_html)
+        self.assertNotRegex(safe_html, r'\sdownload(?:=|[\s>])')
+        self.assertIn('data-pg-blocked-scheme="mailto"', safe_html)
+        self.assertIn("a[data-pg-href]", safe_html)
+        self.assertIn("pointer-events: none !important;", safe_html)
+
+    def test_scenario_x_resanitize_upgrades_legacy_cursor_default(self):
+        """Cached HTML with legacy non-navigating */ cursor:default CSS upgrades cleanly from html_raw."""
+        stale_page = {
+            "page_id": "p_root",
+            "url": "https://example.com/",
+            "scan_status": "AVAILABLE",
+            "page_available": True,
+            "safe_html": (
+                "<!DOCTYPE html><html data-pg-sanitizer-v=\"2\"><head>"
+                "<style>a { cursor: default !important; /* non-navigating */ }</style>"
+                "</head><body><a data-pg-href=\"https://example.com/pricing\">Pricing</a></body></html>"
+            ),
+            "html_raw": (
+                "<!DOCTYPE html><html><body>"
+                "<a href=\"/pricing\">Pricing</a>"
+                "<textarea name=\"msg\">test</textarea>"
+                "</body></html>"
+            ),
+            "dom_diff": {"added": 1},
+            "network_forensics": {"total_requests": 2},
+            "timeline": [{"event": "DOMContentLoaded"}],
+        }
+        upgraded = _build_page_payload(stale_page, "p_root", "sess_legacy_cursor")
+        self.assertNotIn("non-navigating */", upgraded["safe_html"])
+        self.assertIn("cursor: pointer !important;", upgraded["safe_html"])
+        self.assertRegex(upgraded["safe_html"], r'<textarea[^>]*disabled="true"')
+        self.assertEqual(upgraded["dom_diff"], {"added": 1})
+        self.assertEqual(upgraded["network_forensics"], {"total_requests": 2})
+        self.assertEqual(upgraded["timeline"], [{"event": "DOMContentLoaded"}])
+
+    def test_scenario_y_navigate_endpoint_and_write_blocking(self):
+        """POST /safe-view/session/<sid>/navigate serves cached/on-demand read pages and blocks writes with 403."""
+        from flask import Flask
+        from safe_view.routes import safe_view_bp
+        from safe_view.session_manager import session_manager
+
+        engine_mod = sys.modules["safe_view.safe_view_engine"]
+
+        app = Flask(__name__)
+        app.register_blueprint(safe_view_bp)
+        client = app.test_client()
+
+        session = session_manager.create_session("https://example.com/")
+        session.add_page("p_root", {
+            "page_id": "p_root",
+            "url": "https://example.com/",
+            "title": "Home",
+            "http_status": 200,
+            "scan_status": "AVAILABLE",
+            "page_available": True,
+            "safe_html": "<!DOCTYPE html><html><body><a data-pg-href='https://example.com/about'>About</a></body></html>",
+        })
+        session.add_page("p_about", {
+            "page_id": "p_about",
+            "url": "https://example.com/about",
+            "title": "About Us",
+            "http_status": 200,
+            "scan_status": "AVAILABLE",
+            "page_available": True,
+            "safe_html": "<!DOCTYPE html><html><body><h1>About Us</h1></body></html>",
+            "network_forensics": {"total_requests": 1},
+            "timeline": [{"event": "Load"}],
+        })
+
+        with patch.object(engine_mod, "validate_url_safe", return_value={"safe": True}):
+            # 1. Cached page navigation returns 200 immediately with cached=True and forensic data
+            resp_cached = client.post(
+                f"/safe-view/session/{session.session_id}/navigate",
+                json={"url": "https://example.com/about"},
+            )
+            self.assertEqual(resp_cached.status_code, 200)
+            body_cached = resp_cached.get_json()
+            self.assertTrue(body_cached["success"])
+            self.assertTrue(body_cached["cached"])
+            self.assertEqual(body_cached["page_id"], "p_about")
+            self.assertEqual(body_cached["page"]["network_forensics"], {"total_requests": 1})
+
+            # 2. Write / destructive / download URLs are strictly blocked with 403 READ_ONLY_WRITE_BLOCKED
+            for blocked_target in (
+                "https://example.com/account/logout",
+                "https://example.com/checkout",
+                "https://example.com/search?method=post",
+                "https://example.com/downloads/installer.exe",
+            ):
+                resp_blocked = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": blocked_target},
+                )
+                self.assertEqual(resp_blocked.status_code, 403, f"Expected 403 for {blocked_target}")
+                body_blocked = resp_blocked.get_json()
+                self.assertFalse(body_blocked["success"])
+                self.assertTrue(body_blocked["write_blocked"])
+                self.assertEqual(body_blocked["error_code"], "READ_ONLY_WRITE_BLOCKED")
+
+            # 3. Uncached read-only page triggers fast_mode scan and returns 200
+            def _fake_scan(**kwargs):
+                return {
+                    "page_id": kwargs["page_id"],
+                    "url": kwargs["url"],
+                    "title": "Pricing",
+                    "http_status": 200,
+                    "scan_status": "AVAILABLE",
+                    "page_available": True,
+                    "safe_html": "<!DOCTYPE html><html><body><h1>Pricing Page</h1></body></html>",
+                    "content_inventory": {"text_characters": 12, "forms": 0, "links": 0},
+                }
+
+            with patch.object(safe_view_engine, "recover_html_via_http", return_value=None), patch.object(
+                safe_view_engine, "_scan_and_process_page", side_effect=_fake_scan
+            ) as mock_scan:
+                resp_live = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": "https://example.com/pricing", "device_profile": "desktop"},
+                )
+                self.assertEqual(resp_live.status_code, 200)
+                body_live = resp_live.get_json()
+                self.assertTrue(body_live["success"])
+                self.assertFalse(body_live["cached"])
+                self.assertIn("Pricing Page", body_live["page"]["safe_html"])
+                self.assertTrue(mock_scan.call_args.kwargs.get("fast_mode"))
+
+            # 4. Subsequent navigation to that same URL hits session cache (no extra scan)
+            with patch.object(safe_view_engine, "_scan_and_process_page") as mock_scan_again:
+                resp_repeat = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": "https://example.com/pricing/"},
+                )
+                self.assertEqual(resp_repeat.status_code, 200)
+                self.assertTrue(resp_repeat.get_json()["cached"])
+                mock_scan_again.assert_not_called()
+
+        # 5. SSRF private/loopback URL is blocked with 403 BLOCKED_BY_SSRF_GUARD
+        resp_ssrf = client.post(
+            f"/safe-view/session/{session.session_id}/navigate",
+            json={"url": "http://127.0.0.1/admin"},
+        )
+        self.assertEqual(resp_ssrf.status_code, 403)
+        self.assertEqual(resp_ssrf.get_json()["error_code"], "BLOCKED_BY_SSRF_GUARD")
+
+        # 6. Unknown session returns 404 SESSION_EXPIRED
+        resp_missing = client.post(
+            "/safe-view/session/nonexistent_sess_id/navigate",
+            json={"url": "https://example.com/about"},
+        )
+        self.assertEqual(resp_missing.status_code, 404)
+        self.assertEqual(resp_missing.get_json()["error_code"], "SESSION_EXPIRED")
+
+    def test_scenario_z_universal_buttons_dropdowns_and_fast_http_reachability(self):
+        """
+        Verifies universal button/dropdown/area/unquoted-link support, token-boundary
+        destructive URL checks (allowing /killers, /skills, ?orderby=date, /backdrop),
+        fast HTTP SSR immediate navigation, SPA VM escalation, SSRF redirect blocking,
+        and non-caching of FAILED fallback stubs.
+        """
+        from flask import Flask
+        from safe_view.routes import safe_view_bp, _resanitize_if_needed
+        from safe_view.session_manager import session_manager
+        from safe_view.safe_view_engine import safe_view_engine
+        from safe_view.discovery_engine import page_discovery_engine
+
+        # 1. Sanitizer button, onclick-nav, data-to, unquoted href, area, form button, and dropdown CSS
+        raw_html = """
+        <html>
+        <body>
+            <nav>
+                <button onclick="window.location='/movies'">Browse Movies</button>
+                <button data-to="/about">About Button</button>
+                <button type="button" aria-expanded="false">GENRES</button>
+                <a href=/raw-unquoted>Unquoted</a>
+                <map name="m"><area shape="rect" coords="0,0,10,10" href="/map-spot"></map>
+                <form action="/login">
+                    <input type="text" name="u">
+                    <button>Submit Form</button>
+                </form>
+            </nav>
+        </body>
+        </html>
+        """
+        safe_html, elements, _ = html_sanitizer.sanitize(raw_html, "https://example.com/")
+        self.assertNotIn("onclick", safe_html.lower())
+        self.assertIn('data-pg-href="https://example.com/movies"', safe_html)
+        self.assertIn('data-pg-href="https://example.com/about"', safe_html)
+        self.assertIn('data-pg-href="https://example.com/raw-unquoted"', safe_html)
+        self.assertIn('data-pg-href="https://example.com/map-spot"', safe_html)
+        self.assertIn('data-pg-control="nav"', safe_html)
+        self.assertIn('data-pg-control="ui"', safe_html)
+        self.assertIn('data-pg-nav-v="3"', safe_html)
+        self.assertIn(".pg-dropdown-open", safe_html)
+        # Interactive nav/ui buttons must not be natively disabled; form submit buttons stay disabled
+        self.assertNotRegex(safe_html, r'<button[^>]*data-pg-control="(?:nav|ui)"[^>]*disabled="true"')
+        self.assertRegex(safe_html, r'<button[^>]*disabled="true"[^>]*>Submit Form</button>')
+        self.assertEqual(sum(1 for e in elements if e.get("tag") == "AREA"), 1)
+
+        # Auto-upgrade v2 cached HTML without data-pg-nav-v="3"
+        upgraded = _resanitize_if_needed({
+            "safe_html": '<html><head><style id="pg-safe-viewer-styles" data-pg-sanitizer-v="2"></style></head><body><button type="button">Menu</button></body></html>',
+            "html_raw": '<html><body><button type="button">Menu</button></body></html>',
+            "url": "https://example.com/",
+        })
+        self.assertIn('data-pg-nav-v="3"', upgraded)
+
+        # 2. Discovery & read-only gate must allow benign words and block real destructive endpoints
+        discovery = page_discovery_engine.extract_all_links(
+            html_content="""
+                <a href="/killers-2026/">Killers</a>
+                <a href="/skills">Skills</a>
+                <a href="/?orderby=date">Latest</a>
+                <a href="/backdrop">Backdrop</a>
+                <a href="/exhibition">Exhibition</a>
+                <a href="/account/logout">Logout</a>
+                <a href="/checkout">Checkout</a>
+                <a href="/item?action=delete">Delete</a>
+                <button onclick="location.href='/guides'">Guides</button>
+            """,
+            current_url="https://example.com/",
+            target_origin_url="https://example.com/",
+            current_depth=0,
+        )
+        allowed_urls = {c["url"] for c in discovery["candidates"]}
+        for expected in (
+            "https://example.com/killers-2026",
+            "https://example.com/skills",
+            "https://example.com/?orderby=date",
+            "https://example.com/backdrop",
+            "https://example.com/exhibition",
+            "https://example.com/guides",
+        ):
+            self.assertIn(expected, allowed_urls, f"Benign URL was falsely blocked: {expected}")
+
+        blocked_urls = {b["url"] for b in discovery["blocked_actions"]}
+        self.assertTrue(any("/account/logout" in u for u in blocked_urls))
+        self.assertTrue(any("/checkout" in u for u in blocked_urls))
+        self.assertTrue(any("action=delete" in u for u in blocked_urls))
+
+        # 3. Fast HTTP SSR immediate navigation + retry on stale FAILED fallback + SPA escalation
+        engine_mod = sys.modules["safe_view.safe_view_engine"]
+        app = Flask(__name__)
+        app.register_blueprint(safe_view_bp)
+        client = app.test_client()
+
+        session = session_manager.create_session("https://example.com/")
+        session.add_page("p_root", {
+            "page_id": "p_root",
+            "url": "https://example.com/",
+            "title": "Home",
+            "http_status": 200,
+            "scan_status": "AVAILABLE",
+            "page_available": True,
+            "safe_html": safe_html,
+            "html_raw": raw_html,
+            "content_inventory": {"text_characters": 100, "forms": 1, "links": 2},
+        })
+        # Stale failed fallback cached previously for /killers-2026/
+        session.add_discovered_candidate(
+            page_id="p_killers",
+            url="https://example.com/killers-2026/",
+            path="/killers-2026/",
+            depth=1,
+            title="Killers 2026",
+            is_root=False,
+            parent_page_id="p_root",
+        )
+        session.add_page("p_killers", {
+            "page_id": "p_killers",
+            "url": "https://example.com/killers-2026/",
+            "scan_status": "FAILED",
+            "page_available": False,
+            "error_type": "NAV_TIMEOUT",
+            "safe_html": "<div>PAGE NAVIGATION FAILED</div>",
+        })
+
+        with patch.object(engine_mod, "validate_url_safe", return_value={"safe": True}):
+            # 3a. Stale FAILED cache is NOT served as hit; fast SSR HTML serves immediately without VM scan
+            with patch.object(
+                safe_view_engine,
+                "recover_html_via_http",
+                return_value={
+                    "html": "<html><head><title>Killers 2026</title></head><body><main><h1>Killers 2026 Movie Page</h1><p>Full server-rendered details with plenty of readable content to bypass SPA heuristics cleanly.</p></main></body></html>",
+                    "final_url": "https://example.com/killers-2026/",
+                    "http_status": 200,
+                    "page_title": "Killers 2026",
+                    "redirect_chain": ["https://example.com/killers-2026/"],
+                },
+            ), patch.object(safe_view_engine, "_scan_and_process_page") as mock_vm_scan:
+                resp_ssr = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": "https://example.com/killers-2026/"},
+                )
+                self.assertEqual(resp_ssr.status_code, 200)
+                body_ssr = resp_ssr.get_json()
+                self.assertTrue(body_ssr["success"])
+                self.assertIn("Killers 2026 Movie Page", body_ssr["page"]["safe_html"])
+                mock_vm_scan.assert_not_called()
+
+            # 3b. SPA shell triggers automatic escalation to VM Playwright (fast_mode=True)
+            def _fake_spa_vm(**kwargs):
+                return {
+                    "page_id": kwargs["page_id"],
+                    "url": kwargs["url"],
+                    "title": "SPA App Page",
+                    "http_status": 200,
+                    "scan_status": "AVAILABLE",
+                    "page_available": True,
+                    "safe_html": "<!DOCTYPE html><html><body><div id='root'>Hydrated SPA UI</div></body></html>",
+                    "content_inventory": {"text_characters": 15, "forms": 0, "links": 0},
+                }
+
+            with patch.object(
+                safe_view_engine,
+                "recover_html_via_http",
+                return_value={
+                    "html": '<html><body><div id="root"></div><script src="/a.js"></script><script src="/b.js"></script></body></html>',
+                    "final_url": "https://example.com/spa-app",
+                    "http_status": 200,
+                    "page_title": "SPA",
+                    "redirect_chain": ["https://example.com/spa-app"],
+                },
+            ), patch.object(safe_view_engine, "_scan_and_process_page", side_effect=_fake_spa_vm) as mock_spa_vm:
+                resp_spa = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": "https://example.com/spa-app"},
+                )
+                self.assertEqual(resp_spa.status_code, 200)
+                self.assertIn("Hydrated SPA UI", resp_spa.get_json()["page"]["safe_html"])
+                self.assertTrue(mock_spa_vm.call_args.kwargs.get("fast_mode"))
+
+            # 3c. SSRF redirect hop in fast HTTP is blocked with 403 BLOCKED_BY_SSRF_GUARD
+            with patch.object(
+                safe_view_engine,
+                "recover_html_via_http",
+                return_value={
+                    "ssrf_redirect_blocked": True,
+                    "blocked_url": "http://127.0.0.1/secret",
+                    "reason": "Blocked internal loopback redirect",
+                },
+            ):
+                resp_ssrf_redir = client.post(
+                    f"/safe-view/session/{session.session_id}/navigate",
+                    json={"url": "https://example.com/open-redirect"},
+                )
+                self.assertEqual(resp_ssrf_redir.status_code, 403)
+                self.assertEqual(resp_ssrf_redir.get_json()["error_code"], "BLOCKED_BY_SSRF_GUARD")
+
 
 if __name__ == "__main__":
     unittest.main()

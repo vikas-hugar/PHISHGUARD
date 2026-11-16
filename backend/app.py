@@ -386,6 +386,10 @@ SUSPICIOUS_KEYWORDS = [
     "wallet", "upi", "netbanking", "kyc", "pan", "aadhaar",
     "subscription", "renew", "failed", "cancel", "membership",
     "crypto", "bitcoin", "btc", "ethereum", "binance",
+    "payroll", "deposit", "portal", "seed", "phrase", "identity",
+    "customer", "support", "notification", "statement", "resolve",
+    "session", "restore", "recovery", "storage", "unauthorized",
+    "direct-deposit", "locked", "unlock-account", "webscr", "secure-login",
 ]
 
 # =========================================
@@ -476,7 +480,19 @@ def roberta_predict(url: str) -> float:
         with torch.no_grad():
             logits = roberta_model(**inputs).logits
         probs = torch.softmax(logits, dim=-1)
-        return float(probs[0][1].item())
+        # In PHISHGUARD_ROBERTA_V1, Label 0 is Phishing, Label 1 is Legitimate
+        p_phish = float(probs[0][0].item())
+
+        # Calibration for bare root domains (no path and no query)
+        # When given an isolated root domain, token logits are near zero (neutral).
+        parsed = urlparse(url if "://" in url else "https://" + url)
+        path = (parsed.path or "").strip("/")
+        if not path and not parsed.query:
+            l0, l1 = logits[0][0].item(), logits[0][1].item()
+            if abs(l0 - l1) < 0.6:
+                p_phish = 0.50
+
+        return p_phish
     except Exception as ex:
         print(f"[PhishGuard V6] RoBERTa inference error: {ex}")
         return 0.5
@@ -494,13 +510,17 @@ def extract_domain(url):
 
 
 # =========================================
-# URL HEURISTIC ENGINE (V6)
+# URL HEURISTIC ENGINE (V6 / V7 ENHANCED)
 # =========================================
 HIGH_RISK_TLDS = {
     ".top": 38, ".xyz": 35, ".live": 32, ".click": 36, ".zip": 38,
     ".tk": 40, ".ml": 40, ".ga": 40, ".cf": 40, ".gq": 40,
     ".cam": 35, ".icu": 34, ".bond": 32, ".rest": 32, ".vip": 30,
     ".pw": 30, ".su": 28, ".ru": 18, ".cn": 16,
+    ".link": 32, ".cc": 30, ".info": 25, ".work": 32, ".fit": 30,
+    ".surf": 30, ".buzz": 32, ".monster": 34, ".cfd": 35, ".club": 22,
+    ".space": 25, ".website": 26, ".guru": 24, ".bid": 36, ".loan": 36,
+    ".racing": 35, ".date": 34, ".trade": 32, ".party": 32, ".science": 30,
 }
 
 
@@ -528,9 +548,11 @@ def calculate_rule_score(url, domain):
         score += 40
         reasons.append("IP address used as host")
 
+    matched_tld = None
     for tld, pts in HIGH_RISK_TLDS.items():
         if domain.endswith(tld):
             score += pts
+            matched_tld = tld
             reasons.append(f"Suspicious TLD ({tld})")
             break
 
@@ -539,6 +561,18 @@ def calculate_rule_score(url, domain):
     if sub_depth >= 3:
         score += 20
         reasons.append("Excessive subdomain depth")
+
+    # Hyphen chaining in domain (common in phishing keyword stuffing)
+    domain_hyphens = domain.count("-")
+    if domain_hyphens >= 4:
+        score += 35
+        reasons.append(f"Heavy hyphen chaining in domain ({domain_hyphens} hyphens)")
+    elif domain_hyphens == 3:
+        score += 25
+        reasons.append("Multiple hyphen chaining in domain")
+    elif domain_hyphens == 2:
+        score += 10
+        reasons.append("Consecutive hyphens in domain")
 
     entropy = url_entropy(url)
     if entropy > 4.5:
@@ -560,11 +594,32 @@ def calculate_rule_score(url, domain):
         score += 10
         reasons.append("High special character ratio")
 
-    full_url_lower = url.lower()
-    kw_hits = [kw for kw in SUSPICIOUS_KEYWORDS if kw in full_url_lower]
-    if kw_hits:
-        score += min(len(kw_hits) * 8, 35)
-        reasons.append("Credential harvesting keywords")
+    domain_lower = domain.lower()
+    url_path_lower = (urlparse(url).path or "").lower()
+
+    # Check for keywords embedded directly in domain or subdomain (high risk for phishing)
+    domain_kw_hits = [kw for kw in SUSPICIOUS_KEYWORDS if kw in domain_lower]
+    if domain_kw_hits:
+        score += min(len(domain_kw_hits) * 12, 35)
+        reasons.append(f"Credential harvesting keywords in domain ({', '.join(domain_kw_hits[:3])})")
+
+    # Path keywords: coercive or combined with other structural anomalies
+    path_kw_hits = [kw for kw in SUSPICIOUS_KEYWORDS if kw in url_path_lower]
+    coercive_kws = [kw for kw in path_kw_hits if kw in (
+        "suspended", "urgent", "unlock", "finalnotice", "restrict", "passcode",
+        "credential", "phrase", "restore", "auth", "login", "verify", "direct-deposit", "identity"
+    )]
+    if coercive_kws:
+        score += min(len(coercive_kws) * 12, 30)
+        reasons.append(f"Suspicious account restriction keywords in path ({', '.join(coercive_kws[:3])})")
+    elif path_kw_hits and score > 15:
+        score += min(len(path_kw_hits) * 5, 15)
+        reasons.append("Authentication keywords in anomalous URL structure")
+
+    # Synergistic compounding: Risky TLD + Suspicious Keyword lure
+    if matched_tld and (domain_kw_hits or coercive_kws):
+        score += 25
+        reasons.append("Compounding risk: High-risk TLD with credential/security keyword lure")
 
     SHORTENERS = ["bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "short.link"]
     if any(domain == s or domain.endswith("." + s) for s in SHORTENERS):
@@ -663,9 +718,9 @@ def predict():
         if not url:
             return jsonify({"status": "failed", "error": "No URL provided"}), 400
 
-        scan_mode = data.get("scan_mode", "quick").lower()
+        scan_mode = data.get("scan_mode", "deep").lower()
         if scan_mode not in ("quick", "deep"):
-            scan_mode = "quick"
+            scan_mode = "deep"
 
         print(f"[URL] Received URL: {url}", flush=True)
 
@@ -745,7 +800,7 @@ def predict():
                 },
             }), 400
 
-        if not reachability["reachable"]:
+        if not reachability["reachable"] and scan_mode != "quick":
             print(f"[REACHABILITY] URL not reachable ({reachability['status']})", flush=True)
             print("[SCAN] Full analysis skipped", flush=True)
             detection_time_ms = round((time.perf_counter() - start_time) * 1000, 1)
@@ -933,6 +988,7 @@ def predict():
             deep_scan=None,
             visual_analysis=None,
             is_whitelisted=is_whitelisted,
+            url=url_norm,
         )
         quick_scan_summary = {
             "executed": True,
@@ -942,7 +998,7 @@ def predict():
         }
 
         # ─────────────────────────────────────────────────────────────────
-        # STEP 7: ALWAYS DEEP SCAN (VirtualBox Analysis VM)
+        # STEP 7: DEEP SCAN (VirtualBox Analysis VM)
         # ─────────────────────────────────────────────────────────────────
         deep_scan_result = None
         html_evidence = {}
@@ -950,245 +1006,278 @@ def predict():
         screenshot_evidence = {}
         raw_ds = {}
 
-        sb_status = get_sandbox_status()
-        if not sb_status.get("sandbox_available"):
-            sb_status = check_sandbox_availability()
-        if not sb_status.get("sandbox_available"):
-            deep_scan_result = {
-                "available": False,
-                "attempted": True,
-                "executed": False,
-                "success": False,
-                "status": "VM_UNAVAILABLE",
-                "scan_status": "VM_UNAVAILABLE",
-                "navigation_status": "UNAVAILABLE",
-                "error_type": "VM_AGENT_UNAVAILABLE",
-                "error": f"Deep Scan unavailable: {sb_status.get('unavailability_reason', 'VirtualBox VM agent not reachable')}. Quick Scan protection remains active.",
-                "final_url": url_norm,
-                "page_title": None,
-                "redirect_count": 0,
-                "forms": 0,
-                "password_fields": 0,
-                "email_fields": 0,
-                "otp_fields": 0,
-                "payment_fields": 0,
-                "screenshot_available": False,
-                "ocr_available": False,
-                "ocr_word_count": 0,
-            }
-        else:
-            t_ds = time.perf_counter()
-            print(f"[PhishGuard V7] Executing Deep Scan inside VM for: {url_norm}")
-            raw_ds = run_deep_scan(url_norm)
-            timing["deep_scan_ms"] = round((time.perf_counter() - t_ds) * 1000, 1)
-
-            if raw_ds.get("html_raw"):
-                html_evidence = analyze_html(raw_ds["html_raw"], raw_ds.get("final_url", url_norm))
-                dom_evidence = analyze_dom(raw_ds.get("dom_snapshot"), raw_ds.get("final_url", url_norm))
-
-            if raw_ds.get("screenshot_evidence") and raw_ds["screenshot_evidence"].get("available"):
-                screenshot_evidence = raw_ds["screenshot_evidence"]
-            elif raw_ds.get("screenshot_path"):
-                screenshot_evidence = analyze_screenshot(raw_ds.get("screenshot_path"))
-
-            # Propagate screenshot_b64 safely without exposing filesystem paths
-            scr_b64 = raw_ds.get("screenshot_b64")
-            if scr_b64:
-                if not screenshot_evidence:
-                    screenshot_evidence = {"available": True}
-                screenshot_evidence["screenshot_b64"] = scr_b64
-
-            ds_scan_status = raw_ds.get("scan_status", "SUCCESS" if raw_ds.get("success") else "FAILED")
-            ds_executed = bool(raw_ds.get("page_available") or scr_b64 or raw_ds.get("success"))
-
+        if scan_mode == "quick":
             deep_scan_result = {
                 "available": True,
-                "attempted": True,
-                "executed": ds_executed,
-                "success": raw_ds.get("success", False),
-                "status": (
-                    "SUCCESS" if ds_scan_status == "SUCCESS" else (
-                        "PARTIAL" if ds_scan_status == "PARTIAL" else (
-                            "TARGET_TIMEOUT" if raw_ds.get("navigation_status") == "TIMEOUT" else "FAILED"
-                        )
-                    )
-                ),
-                "scan_status": ds_scan_status,
-                "navigation_status": raw_ds.get("navigation_status", "SUCCESS" if raw_ds.get("success") else "ERROR"),
-                "error": raw_ds.get("error"),
-                "error_type": raw_ds.get("error_type"),
-                "failure_stage": raw_ds.get("failure_stage") or ("Playwright Navigation (page.goto)" if raw_ds.get("navigation_status") == "TIMEOUT" else None),
-                "stage_timings": raw_ds.get("stage_timings", {}),
-                "retry_attempt": raw_ds.get("retry_attempt", 1),
-                "failed_resources": raw_ds.get("failed_resources", []),
-                "failed_resources_count": len(raw_ds.get("failed_resources", [])),
-                "http_status": raw_ds.get("http_status"),
-                "page_available": raw_ds.get("page_available", bool(raw_ds.get("html_raw"))),
-                "screenshot_available": bool(scr_b64),
-                "ocr_available": bool(screenshot_evidence and screenshot_evidence.get("ocr_available")),
-                "dom_available": bool(dom_evidence and dom_evidence.get("available")),
-                "screenshot_type": raw_ds.get("screenshot_type", "viewport" if scr_b64 else None),
-                "screenshot_status": raw_ds.get("screenshot_status", "captured" if scr_b64 else "unavailable"),
-                "redirect_chain": raw_ds.get("redirect_chain", []),
-                "final_url": raw_ds.get("final_url", url_norm),
-                "page_title": raw_ds.get("page_title"),
-                "redirect_count": raw_ds.get("redirect_count", 0),
-                "load_time_ms": raw_ds.get("load_time_ms", 0.0),
-                "forms": len(raw_ds.get("forms", [])),
-                "forms_count": len(raw_ds.get("forms", [])),
-                "password_fields": len(raw_ds.get("password_fields", [])),
-                "email_fields": len(raw_ds.get("email_fields", [])),
-                "otp_fields": len(raw_ds.get("otp_fields", [])),
-                "payment_fields": len(raw_ds.get("payment_fields", [])),
-                "external_resources_count": len(raw_ds.get("external_resources", [])),
-                "ocr_word_count": screenshot_evidence.get("ocr_word_count", 0),
-                "html_evidence": html_evidence,
-                "dom_evidence": dom_evidence,
-                "screenshot_evidence": screenshot_evidence,
-                "screenshot_b64": scr_b64,
+                "attempted": False,
+                "executed": False,
+                "success": True,
+                "status": "QUICK_SCAN_MODE",
+                "scan_status": "SKIPPED",
+                "navigation_status": "SKIPPED",
+                "message": "Quick scan requested; in-VM deep scan skipped.",
+                "final_url": url_norm,
+                "forms": 0,
+                "password_fields": 0,
+                "screenshot_available": False,
             }
+        else:
+            sb_status = get_sandbox_status()
+            if not sb_status.get("sandbox_available"):
+                sb_status = check_sandbox_availability()
+            if not sb_status.get("sandbox_available"):
+                deep_scan_result = {
+                    "available": False,
+                    "attempted": True,
+                    "executed": False,
+                    "success": False,
+                    "status": "VM_UNAVAILABLE",
+                    "scan_status": "VM_UNAVAILABLE",
+                    "navigation_status": "UNAVAILABLE",
+                    "error_type": "VM_AGENT_UNAVAILABLE",
+                    "error": f"Deep Scan unavailable: {sb_status.get('unavailability_reason', 'VirtualBox VM agent not reachable')}. Quick Scan protection remains active.",
+                    "final_url": url_norm,
+                    "page_title": None,
+                    "redirect_count": 0,
+                    "forms": 0,
+                    "password_fields": 0,
+                    "email_fields": 0,
+                    "otp_fields": 0,
+                    "payment_fields": 0,
+                    "screenshot_available": False,
+                    "ocr_available": False,
+                    "ocr_word_count": 0,
+                }
+            else:
+                t_ds = time.perf_counter()
+                print(f"[PhishGuard V7] Executing Deep Scan inside VM for: {url_norm}")
+                raw_ds = run_deep_scan(url_norm)
+                timing["deep_scan_ms"] = round((time.perf_counter() - t_ds) * 1000, 1)
+
+                if raw_ds.get("html_raw"):
+                    html_evidence = analyze_html(raw_ds["html_raw"], raw_ds.get("final_url", url_norm))
+                    dom_evidence = analyze_dom(raw_ds.get("dom_snapshot"), raw_ds.get("final_url", url_norm))
+
+                if raw_ds.get("screenshot_evidence") and raw_ds["screenshot_evidence"].get("available"):
+                    screenshot_evidence = raw_ds["screenshot_evidence"]
+                elif raw_ds.get("screenshot_path"):
+                    screenshot_evidence = analyze_screenshot(raw_ds.get("screenshot_path"))
+
+                # Propagate screenshot_b64 safely without exposing filesystem paths
+                scr_b64 = raw_ds.get("screenshot_b64")
+                if scr_b64:
+                    if not screenshot_evidence:
+                        screenshot_evidence = {"available": True}
+                    screenshot_evidence["screenshot_b64"] = scr_b64
+
+                ds_scan_status = raw_ds.get("scan_status", "SUCCESS" if raw_ds.get("success") else "FAILED")
+                ds_executed = bool(raw_ds.get("page_available") or scr_b64 or raw_ds.get("success"))
+
+                deep_scan_result = {
+                    "available": True,
+                    "attempted": True,
+                    "executed": ds_executed,
+                    "success": raw_ds.get("success", False),
+                    "status": (
+                        "SUCCESS" if ds_scan_status == "SUCCESS" else (
+                            "PARTIAL" if ds_scan_status == "PARTIAL" else (
+                                "TARGET_TIMEOUT" if raw_ds.get("navigation_status") == "TIMEOUT" else "FAILED"
+                            )
+                        )
+                    ),
+                    "scan_status": ds_scan_status,
+                    "navigation_status": raw_ds.get("navigation_status", "SUCCESS" if raw_ds.get("success") else "ERROR"),
+                    "error": raw_ds.get("error"),
+                    "error_type": raw_ds.get("error_type"),
+                    "failure_stage": raw_ds.get("failure_stage") or ("Playwright Navigation (page.goto)" if raw_ds.get("navigation_status") == "TIMEOUT" else None),
+                    "stage_timings": raw_ds.get("stage_timings", {}),
+                    "retry_attempt": raw_ds.get("retry_attempt", 1),
+                    "failed_resources": raw_ds.get("failed_resources", []),
+                    "failed_resources_count": len(raw_ds.get("failed_resources", [])),
+                    "http_status": raw_ds.get("http_status"),
+                    "page_available": raw_ds.get("page_available", bool(raw_ds.get("html_raw"))),
+                    "screenshot_available": bool(scr_b64),
+                    "ocr_available": bool(screenshot_evidence and screenshot_evidence.get("ocr_available")),
+                    "dom_available": bool(dom_evidence and dom_evidence.get("available")),
+                    "screenshot_type": raw_ds.get("screenshot_type", "viewport" if scr_b64 else None),
+                    "screenshot_status": raw_ds.get("screenshot_status", "captured" if scr_b64 else "unavailable"),
+                    "redirect_chain": raw_ds.get("redirect_chain", []),
+                    "final_url": raw_ds.get("final_url", url_norm),
+                    "page_title": raw_ds.get("page_title"),
+                    "redirect_count": raw_ds.get("redirect_count", 0),
+                    "load_time_ms": raw_ds.get("load_time_ms", 0.0),
+                    "forms": len(raw_ds.get("forms", [])),
+                    "forms_count": len(raw_ds.get("forms", [])),
+                    "password_fields": len(raw_ds.get("password_fields", [])),
+                    "email_fields": len(raw_ds.get("email_fields", [])),
+                    "otp_fields": len(raw_ds.get("otp_fields", [])),
+                    "payment_fields": len(raw_ds.get("payment_fields", [])),
+                    "external_resources_count": len(raw_ds.get("external_resources", [])),
+                    "ocr_word_count": screenshot_evidence.get("ocr_word_count", 0),
+                    "html_evidence": html_evidence,
+                    "dom_evidence": dom_evidence,
+                    "screenshot_evidence": screenshot_evidence,
+                    "screenshot_b64": scr_b64,
+                }
 
         # ── STEP 7B: Safe Web View Session Initialization ─────────────────────────
         safe_view_session = None
         safe_view_data = None
-        try:
-            final_url_val = (raw_ds.get("final_url") if raw_ds else None) or url_norm
-            safe_view_session = session_manager.create_session(target_url=final_url_val)
+        if scan_mode == "deep":
+            try:
+                final_url_val = (raw_ds.get("final_url") if raw_ds else None) or url_norm
+                safe_view_session = session_manager.create_session(target_url=final_url_val)
 
-            html_content_for_view = (raw_ds.get("dom_snapshot") or raw_ds.get("html_raw") or "") if raw_ds else ""
-            err_type = (raw_ds.get("error_type") if raw_ds else None) or ("DEEP_SCAN_NOT_RUN" if not raw_ds else None)
+                html_content_for_view = (raw_ds.get("dom_snapshot") or raw_ds.get("html_raw") or "") if raw_ds else ""
+                is_ssrf_blocked = bool(raw_ds and (raw_ds.get("scan_status") == "BLOCKED" or raw_ds.get("security_block")))
+                recovered_rec = None
+                if (not html_content_for_view or html_content_for_view.strip() == "<html><head></head><body></body></html>") and not is_ssrf_blocked:
+                    recovered_rec = safe_view_engine.recover_html_via_http(final_url_val)
+                    if recovered_rec:
+                        html_content_for_view = recovered_rec["html"]
+                        final_url_val = recovered_rec["final_url"]
+                        if raw_ds is None:
+                            raw_ds = {}
+                        raw_ds["dom_snapshot"] = html_content_for_view
+                        raw_ds["html_raw"] = html_content_for_view
+                        raw_ds["http_status"] = recovered_rec["http_status"]
+                        if recovered_rec.get("page_title") and not raw_ds.get("page_title"):
+                            raw_ds["page_title"] = recovered_rec["page_title"]
 
-            # Build safe read-only representation from captured DOM (or fallback)
-            safe_html, elements_map, content_inventory = html_sanitizer.sanitize(
-                html_content=html_content_for_view,
-                base_url=final_url_val,
-                dynamic_events=raw_ds.get("dom_behavior", {}).get("behavioral_events") if raw_ds else None,
-                error_type=err_type if not html_content_for_view else None,
-                captured_stylesheets=raw_ds.get("captured_stylesheets") if raw_ds else None,
-            )
+                err_type = (raw_ds.get("error_type") if raw_ds else None) or ("DEEP_SCAN_NOT_RUN" if not raw_ds else None)
 
-            dom_diff = forensic_engine.compute_dom_diff(
-                initial_dom=raw_ds.get("html_raw") if raw_ds else None,
-                final_dom=raw_ds.get("dom_snapshot") if raw_ds else None,
-                dom_behavior=raw_ds.get("dom_behavior") if raw_ds else None,
-                base_url=final_url_val,
-            )
-
-            network_forensics = forensic_engine.compile_network_forensics(
-                raw_ds=raw_ds or {},
-                base_url=final_url_val,
-            )
-
-            timeline = forensic_engine.build_temporal_timeline(
-                raw_ds=raw_ds or {},
-                load_time_ms=(raw_ds.get("load_time_ms") if raw_ds else 0.0) or 0.0,
-                dom_behavior=raw_ds.get("dom_behavior") if raw_ds else None,
-                network_requests=network_forensics.get("requests", []),
-            )
-
-            root_rec = {
-                "page_id": "p_root",
-                "representation_id": "p_root",
-                "session_id": safe_view_session.session_id,
-                "scan_id": safe_view_session.session_id,
-                "url": final_url_val,
-                "original_url": url,
-                "canonical_url": final_url_val,
-                "path": urlparse(final_url_val).path or "/",
-                "title": (raw_ds.get("page_title") if raw_ds else None) or urlparse(final_url_val).path or "/",
-                "http_status": (raw_ds.get("http_status") if raw_ds else None) or 200,
-                "depth": 0,
-                "is_root": True,
-                "load_time_ms": (raw_ds.get("load_time_ms") if raw_ds else 0.0) or 0.0,
-                "risk_level": "HIGH" if (raw_ds and (raw_ds.get("password_fields") or dom_diff.get("dynamic_password_injection"))) else "LOW",
-                "has_credentials": bool(raw_ds and raw_ds.get("password_fields")),
-                "scan_status": "AVAILABLE",
-                "status": "AVAILABLE",
-                "page_available": True,
-                "error": None,
-                "error_type": None,
-                "error_details": None,
-                "screenshot_b64": raw_ds.get("screenshot_b64") if raw_ds else None,
-                "screenshot_type": (raw_ds.get("screenshot_type") if raw_ds else None) or "full_page",
-                "safe_html": safe_html,
-                "html_raw": (raw_ds.get("html_raw") if raw_ds else "") or "",
-                "dom_snapshot": (raw_ds.get("dom_snapshot") if raw_ds else "") or "",
-                "elements_map": elements_map,
-                "content_inventory": content_inventory,
-                "forms": (raw_ds.get("forms") if raw_ds else []) or [],
-                "links_count": content_inventory.get("links", 0),
-                "dom_diff": dom_diff,
-                "dom_behavior": (raw_ds.get("dom_behavior") if raw_ds else {}) or {},
-                "network_forensics": network_forensics,
-                "timeline": timeline,
-                "suspicious_indicators": [],
-                "page_states": [
-                    {"name": "Initial DOM (T0)", "status": "Captured", "size": len((raw_ds.get("html_raw") if raw_ds else "") or "")},
-                    {"name": "Post-JavaScript Settled (T1)", "status": "Captured", "size": len((raw_ds.get("dom_snapshot") if raw_ds else "") or "")},
-                ],
-                "security_status": {
-                    "isolated": True,
-                    "read_only": True,
-                    "interactions_blocked": True,
-                    "scripts_disabled": True,
-                },
-            }
-
-            safe_view_session.add_page("p_root", root_rec)
-            safe_view_session.root_page_id = "p_root"
-            safe_view_session.status = "READY"
-            safe_view_session.update_page_status("p_root", "AVAILABLE")
-            safe_view_engine._set_page_event(safe_view_session.session_id, "p_root")
-
-            # Trigger multi-depth background page discovery for same-origin links
-            rendered_dom_content = raw_ds.get("dom_snapshot") or raw_ds.get("html_raw") or ""
-            if rendered_dom_content:
-                discovery_res = page_discovery_engine.extract_all_links(
-                    html_content=rendered_dom_content,
-                    current_url=final_url_val,
-                    target_origin_url=url,
-                    current_depth=0,
+                # Build safe read-only representation from captured DOM (or fallback)
+                safe_html, elements_map, content_inventory = html_sanitizer.sanitize(
+                    html_content=html_content_for_view,
+                    base_url=final_url_val,
+                    dynamic_events=raw_ds.get("dom_behavior", {}).get("behavioral_events") if raw_ds else None,
+                    error_type=err_type if not html_content_for_view else None,
+                    http_status=raw_ds.get("http_status") if raw_ds else None,
+                    captured_stylesheets=raw_ds.get("captured_stylesheets") if raw_ds else None,
                 )
-                candidates = discovery_res.get("candidates", [])
-                blocked = discovery_res.get("blocked_actions", [])
-                ext_domains = discovery_res.get("external_domains", [])
 
-                safe_view_session.add_external_domains(ext_domains)
-                for b in blocked:
-                    safe_view_session.add_blocked_action(b["url"], b["path"], b["reason"], b.get("context", ""))
+                dom_diff = forensic_engine.compute_dom_diff(
+                    initial_dom=raw_ds.get("html_raw") if raw_ds else None,
+                    final_dom=raw_ds.get("dom_snapshot") if raw_ds else None,
+                    dom_behavior=raw_ds.get("dom_behavior") if raw_ds else None,
+                    base_url=final_url_val,
+                )
 
-                initial_queue = []
-                for idx, cand in enumerate(candidates):
-                    if cand.get("is_root"):
-                        continue
-                    cand_page_id = f"p_disc_{idx + 1}"
-                    cand["page_id"] = cand_page_id
-                    safe_view_session.add_discovered_candidate(
-                        page_id=cand_page_id,
-                        url=cand["url"],
-                        path=cand["path"],
-                        depth=cand.get("depth", 1),
-                        title=cand.get("title", ""),
-                        priority=cand.get("priority", 10),
-                        is_root=False,
-                    )
-                    initial_queue.append(cand)
+                network_forensics = forensic_engine.compile_network_forensics(
+                    raw_ds=raw_ds or {},
+                    base_url=final_url_val,
+                )
 
-                safe_view_session.discovery_stats["links_found"] = len(candidates) + len(blocked)
-                safe_view_session.discovery_stats["pages_discovered"] = len(safe_view_session.discovered_pages)
+                timeline = forensic_engine.build_temporal_timeline(
+                    raw_ds=raw_ds or {},
+                    load_time_ms=(raw_ds.get("load_time_ms") if raw_ds else 0.0) or 0.0,
+                    dom_behavior=raw_ds.get("dom_behavior") if raw_ds else None,
+                    network_requests=network_forensics.get("requests", []),
+                )
 
-                if initial_queue:
-                    safe_view_engine.start_background_crawl(
-                        session_id=safe_view_session.session_id,
-                        initial_candidates=initial_queue,
+                root_rec = {
+                    "page_id": "p_root",
+                    "representation_id": "p_root",
+                    "session_id": safe_view_session.session_id,
+                    "scan_id": safe_view_session.session_id,
+                    "url": final_url_val,
+                    "original_url": url,
+                    "canonical_url": final_url_val,
+                    "path": urlparse(final_url_val).path or "/",
+                    "title": (raw_ds.get("page_title") if raw_ds else None) or urlparse(final_url_val).path or "/",
+                    "http_status": (raw_ds.get("http_status") if raw_ds else None) or 200,
+                    "depth": 0,
+                    "is_root": True,
+                    "load_time_ms": (raw_ds.get("load_time_ms") if raw_ds else 0.0) or 0.0,
+                    "risk_level": "HIGH" if (raw_ds and (raw_ds.get("password_fields") or dom_diff.get("dynamic_password_injection"))) else "LOW",
+                    "has_credentials": bool(raw_ds and raw_ds.get("password_fields")),
+                    "scan_status": "AVAILABLE",
+                    "status": "AVAILABLE",
+                    "page_available": True,
+                    "error": None,
+                    "error_type": None,
+                    "error_details": None,
+                    "screenshot_b64": raw_ds.get("screenshot_b64") if raw_ds else None,
+                    "screenshot_type": (raw_ds.get("screenshot_type") if raw_ds else None) or "full_page",
+                    "safe_html": safe_html,
+                    "html_raw": (raw_ds.get("html_raw") if raw_ds else "") or "",
+                    "dom_snapshot": (raw_ds.get("dom_snapshot") if raw_ds else "") or "",
+                    "elements_map": elements_map,
+                    "content_inventory": content_inventory,
+                    "forms": (raw_ds.get("forms") if raw_ds else []) or [],
+                    "links_count": content_inventory.get("links", 0),
+                    "dom_diff": dom_diff,
+                    "dom_behavior": (raw_ds.get("dom_behavior") if raw_ds else {}) or {},
+                    "network_forensics": network_forensics,
+                    "timeline": timeline,
+                    "suspicious_indicators": [],
+                    "page_states": [
+                        {"name": "Initial DOM (T0)", "status": "Captured", "size": len((raw_ds.get("html_raw") if raw_ds else "") or "")},
+                        {"name": "Post-JavaScript Settled (T1)", "status": "Captured", "size": len((raw_ds.get("dom_snapshot") if raw_ds else "") or "")},
+                    ],
+                    "security_status": {
+                        "isolated": True,
+                        "read_only": True,
+                        "interactions_blocked": True,
+                        "scripts_disabled": True,
+                    },
+                }
+
+                safe_view_session.add_page("p_root", root_rec)
+                safe_view_session.root_page_id = "p_root"
+                safe_view_session.status = "READY"
+                safe_view_session.update_page_status("p_root", "AVAILABLE")
+                safe_view_engine._set_page_event(safe_view_session.session_id, "p_root")
+
+                # Trigger multi-depth background page discovery for same-origin links
+                rendered_dom_content = raw_ds.get("dom_snapshot") or raw_ds.get("html_raw") or ""
+                if rendered_dom_content:
+                    discovery_res = page_discovery_engine.extract_all_links(
+                        html_content=rendered_dom_content,
+                        current_url=final_url_val,
                         target_origin_url=url,
-                        max_pages=50,
-                        max_depth=4,
+                        current_depth=0,
                     )
+                    candidates = discovery_res.get("candidates", [])
+                    blocked = discovery_res.get("blocked_actions", [])
+                    ext_domains = discovery_res.get("external_domains", [])
 
-            safe_view_data = safe_view_session.to_dict()
-        except Exception as sve_err:
-            print(f"[SafeView] Integration notice: {sve_err}", flush=True)
+                    safe_view_session.add_external_domains(ext_domains)
+                    for b in blocked:
+                        safe_view_session.add_blocked_action(b["url"], b["path"], b["reason"], b.get("context", ""))
+
+                    initial_queue = []
+                    for idx, cand in enumerate(candidates):
+                        if cand.get("is_root"):
+                            continue
+                        cand_page_id = f"p_disc_{idx + 1}"
+                        cand["page_id"] = cand_page_id
+                        safe_view_session.add_discovered_candidate(
+                            page_id=cand_page_id,
+                            url=cand["url"],
+                            path=cand["path"],
+                            depth=cand.get("depth", 1),
+                            title=cand.get("title", ""),
+                            priority=cand.get("priority", 10),
+                            is_root=False,
+                        )
+                        initial_queue.append(cand)
+
+                    safe_view_session.discovery_stats["links_found"] = len(candidates) + len(blocked)
+                    safe_view_session.discovery_stats["pages_discovered"] = len(safe_view_session.discovered_pages)
+
+                    if initial_queue:
+                        safe_view_engine.start_background_crawl(
+                            session_id=safe_view_session.session_id,
+                            initial_candidates=initial_queue,
+                            target_origin_url=url,
+                            max_pages=50,
+                            max_depth=4,
+                        )
+
+                safe_view_data = safe_view_session.to_dict()
+            except Exception as sve_err:
+                print(f"[SafeView] Integration notice: {sve_err}", flush=True)
 
         # ─────────────────────────────────────────────────────────────────
         # STEP 8: Visual Phishing Analysis
@@ -1239,6 +1328,7 @@ def predict():
             visual_analysis=visual_analysis_result,
             dom_behavior=dom_behavior_result,
             is_whitelisted=is_whitelisted,
+            url=url_norm,
         )
         timing["fusion_ms"] = round((time.perf_counter() - t_fusion) * 1000, 2)
 
@@ -1400,14 +1490,16 @@ def predict():
             },
         }
 
-        # Threat Intelligence summary
+        # Threat Intelligence summary (only mark found=True if URL/domain is actually in threat database)
+        is_exact_threat_db_hit = bool(repo_found and match_type in ("Exact URL Match", "SHA-256 Hash Match", "Malicious Domain"))
         threat_intelligence_summary = {
-            "found": repo_found,
+            "found": is_exact_threat_db_hit,
+            "in_repository": is_exact_threat_db_hit,
             "match_type": match_type or "None",
             "matched_value": repo_result.get("matched_value"),
-            "confidence": repo_result.get("confidence", 0.0),
+            "confidence": repo_result.get("confidence", 0.0) if is_exact_threat_db_hit else 0.0,
             "similarity": round(repo_result.get("similarity", 0.0) * 100, 1),
-            "target_brand": target_brand,
+            "target_brand": target_brand if not is_exact_threat_db_hit else None,
             "threat_type": threat_type or "None",
             "detection_method": repo_result.get("detection_method", "Threat Intelligence Repository"),
         }

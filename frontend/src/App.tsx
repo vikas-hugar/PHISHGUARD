@@ -1,62 +1,41 @@
-import React from 'react';
-import Navbar from './components/Navbar';
-import HeroSection from './components/HeroSection';
-import AboutSection from './components/AboutSection';
-import FeaturesSection from './components/FeaturesSection';
-import HowItWorksSection from './components/HowItWorksSection';
-import ArchitectureSection from './components/ArchitectureSection';
-import DatasetSection from './components/DatasetSection';
-import DemoSection from './components/DemoSection';
-import DashboardSection from './components/DashboardSection';
-import ResearchSection from './components/ResearchSection';
-import TechStackSection from './components/TechStackSection';
-import TeamSection from './components/TeamSection';
-import Footer from './components/Footer';
+import React, { useState } from "react";
+import PhishGuardLanding from "./components/PhishGuardLanding";
+import PhishGuardDashboard, { DashboardTab } from "./components/PhishGuardDashboard";
 
-function App() {
-    return (
-        <div
-            className="min-h-screen text-white font-sans overflow-x-hidden"
-            style={{ background: '#060B18' }}
-        >
-            <Navbar />
-            <main>
-                {/* 1. Hero — animated particle background + headline */}
-                <HeroSection />
+export default function App() {
+  const [currentView, setCurrentView] = useState<"landing" | "dashboard">("landing");
+  const [initialDashboardTab, setInitialDashboardTab] = useState<DashboardTab>("overview");
 
-                {/* 2. About — the zero-day problem */}
-                <AboutSection />
+  const handleLaunchScanner = () => {
+    setInitialDashboardTab("scanner");
+    setCurrentView("dashboard");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-                {/* 3. Features — 6 capability cards */}
-                <FeaturesSection />
+  const handleOpenDashboard = (tab: DashboardTab = "overview") => {
+    setInitialDashboardTab(tab);
+    setCurrentView("dashboard");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-                {/* 4. How It Works — Hybrid CNN–BiLSTM + RoBERTa pipeline flowchart */}
-                <HowItWorksSection />
+  const handleBackToLanding = () => {
+    setCurrentView("landing");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-                {/* 5. Architecture — layer-by-layer deep learning pipeline */}
-                <ArchitectureSection />
-
-                {/* 6. Training & Performance — charts + metrics */}
-                <DatasetSection />
-
-                {/* 7. Live URL Detection Demo */}
-                <DemoSection />
-
-                {/* 8. Dashboard — stats, donut chart, scan history, model perf */}
-                <DashboardSection />
-
-                {/* 9. Research Contributions */}
-                <ResearchSection />
-
-                {/* 10. Tech Stack */}
-                <TechStackSection />
-
-                {/* 11. Academic Presentation info */}
-                <TeamSection />
-            </main>
-            <Footer />
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-[#000000] text-[#FFFFFF] font-sans selection:bg-[#FFFFFF] selection:text-[#000000]">
+      {currentView === "landing" ? (
+        <PhishGuardLanding
+          onLaunchScanner={handleLaunchScanner}
+          onExploreCapabilities={() => {}}
+        />
+      ) : (
+        <PhishGuardDashboard
+          onBackToLanding={handleBackToLanding}
+          initialTab={initialDashboardTab}
+        />
+      )}
+    </div>
+  );
 }
-
-export default App;

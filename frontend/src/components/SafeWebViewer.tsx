@@ -1708,8 +1708,8 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                 {/* Center: Sleek Unified Address Bar */}
                 <div className="flex-1 min-w-0 max-w-3xl mx-1 sm:mx-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border border-slate-800 text-xs shadow-inner">
-                        <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span className="hidden sm:inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">
+                        <Lock className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span className="hidden sm:inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-white bg-white/10 px-1.5 py-0.5 rounded border border-white/20 shrink-0">
                             Safe View
                         </span>
                         <div className="h-3 w-px bg-slate-800 hidden sm:block shrink-0" />
@@ -1717,13 +1717,13 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             {currentDisplayUrl}
                         </span>
                         {isNavigating && (
-                            <span className="flex items-center gap-1.5 text-[10px] text-cyan-400 font-medium shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                            <span className="flex items-center gap-1.5 text-[10px] text-white font-medium shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                                 <span className="hidden md:inline">Loading...</span>
                             </span>
                         )}
                         {(pageDetail?.http_status && pageDetail.http_status >= 400) || (activePage?.http_status && activePage.http_status >= 400) ? (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold font-mono shrink-0">
+                            <span className="px-1.5 py-0.5 rounded bg-[#1A1A1A] text-white border border-[#808080] text-[10px] font-bold font-mono shrink-0">
                                 HTTP {pageDetail?.http_status || activePage?.http_status}
                             </span>
                         ) : null}
@@ -1762,13 +1762,13 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                         onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
                             isRightPanelOpen
-                                ? 'bg-slate-800 text-purple-300 border-purple-500/40 shadow-sm'
-                                : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
+                                ? 'bg-[#1A1A1A] text-white border-white shadow-sm'
+                                : 'bg-[#111111] text-[#808080] border-[#1A1A1A] hover:text-white'
                         }`}
                         title={isRightPanelOpen ? "Close Forensics Panel" : "Open Forensics Panel"}
                         aria-label="Toggle Forensics Panel"
                     >
-                        <Activity className="w-3.5 h-3.5 text-purple-400" />
+                        <Activity className="w-3.5 h-3.5 text-white" />
                         <span className="hidden md:inline text-[11px]">Forensics</span>
                     </button>
 
@@ -1778,7 +1778,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             id="btn-exit-fullscreen"
                             type="button"
                             onClick={() => setIsFullscreen(false)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-xs transition-colors cursor-pointer shrink-0 shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:opacity-90 text-black font-semibold text-xs transition-colors cursor-pointer shrink-0 shadow-sm"
                             title="Exit Full Screen (Esc)"
                             aria-label="Exit full screen"
                         >
@@ -1826,13 +1826,13 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
 
         return (
             <div className={`flex-1 flex flex-col items-center justify-center p-6 text-center font-mono ${isFullMode ? 'min-h-[500px]' : 'min-h-[480px]'}`}>
-                <div className="p-6 rounded-2xl bg-black/80 border border-purple-500/30 shadow-2xl max-w-xl w-full text-left space-y-4">
+                <div className="p-6 rounded-2xl bg-black/80 border border-[#1A1A1A] shadow-2xl max-w-xl w-full text-left space-y-4">
                     <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                        <div className={`p-2.5 rounded-xl border ${isExpired ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-red-500/15 border-red-500/30 text-red-400'}`}>
+                        <div className="p-2.5 rounded-xl border bg-black border-[#1A1A1A] text-white">
                             {isExpired ? <Clock className="w-6 h-6" /> : <AlertOctagon className="w-6 h-6" />}
                         </div>
                         <div>
-                            <h3 className={`text-sm font-bold tracking-wider ${isExpired ? 'text-amber-300' : 'text-red-400'}`}>
+                            <h3 className="text-sm font-bold tracking-wider text-white">
                                 {isExpired ? 'ANALYSIS SESSION EXPIRED' : 'PAGE REPRESENTATION UNAVAILABLE'}
                             </h3>
                             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1844,7 +1844,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                     <div className="space-y-2 text-xs bg-black/50 p-3 rounded-xl border border-white/5">
                         <div className="flex items-center justify-between">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider">Session ID:</span>
-                            <span className="font-mono text-purple-300 font-bold text-[11px] select-all">{displaySid}</span>
+                            <span className="font-mono text-white font-bold text-[11px] select-all">{displaySid}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider">Page ID:</span>
@@ -1852,21 +1852,21 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider">Target URL:</span>
-                            <span className="font-mono text-cyan-300 text-[11px] truncate max-w-[280px]" title={activePage?.url || targetUrl}>
+                            <span className="font-mono text-slate-200 text-[11px] truncate max-w-[280px]" title={activePage?.url || targetUrl}>
                                 {activePage?.url || targetUrl}
                             </span>
                         </div>
                         <div className="flex items-center justify-between pt-1 border-t border-white/5">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider">Target HTTP Status:</span>
-                            <span className="text-emerald-400 font-bold text-[11px]">HTTP {targetHttpStatus}</span>
+                            <span className="text-white font-bold text-[11px]">HTTP {targetHttpStatus}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider">Safe View Status:</span>
-                            <span className={`font-bold text-[11px] ${isExpired ? 'text-amber-400' : 'text-red-400'}`}>{safeViewStatus}</span>
+                            <span className="font-bold text-[11px] text-white">{safeViewStatus}</span>
                         </div>
                         <div className="pt-2 border-t border-white/5">
                             <span className="text-slate-500 text-[10px] uppercase tracking-wider block mb-1">Reason:</span>
-                            <div className="p-2 rounded bg-red-950/30 border border-red-500/20 text-red-300 text-[11px] leading-relaxed">
+                            <div className="p-2 rounded bg-black border border-[#1A1A1A] text-slate-300 text-[11px] leading-relaxed">
                                 {reasonText}
                             </div>
                         </div>
@@ -1878,16 +1878,16 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                             onClick={handleReload}
                             className="flex-1 min-w-[140px] px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center gap-2 border border-white/10 transition-all cursor-pointer"
                         >
-                            <RotateCw className="w-3.5 h-3.5 text-purple-400" />
+                            <RotateCw className="w-3.5 h-3.5 text-white" />
                             <span>Check Session Again</span>
                         </button>
                         {onRescan && (
                             <button
                                 type="button"
                                 onClick={onRescan}
-                                className="flex-1 min-w-[140px] px-3.5 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 border border-purple-400/30 transition-all cursor-pointer"
+                                className="flex-1 min-w-[140px] px-3.5 py-2 rounded-lg bg-white hover:opacity-90 text-black text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
                             >
-                                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                                <Sparkles className="w-3.5 h-3.5 text-black" />
                                 <span>Run Fresh Deep Scan</span>
                             </button>
                         )}
@@ -2203,7 +2203,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                         {activeTab === 'content' && (
                             <div className="space-y-4">
                                 <div className="p-3 bg-white/5 rounded-xl border border-white/10 space-y-2 font-mono">
-                                    <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">
+                                    <span className="text-[10px] text-white font-bold uppercase tracking-wider block">
                                         Page Identity
                                     </span>
                                     <div className="text-sm font-semibold text-white break-words">
@@ -2216,7 +2216,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
 
                                 <div>
                                     <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-2.5">
-                                        <Database className="w-3.5 h-3.5 text-purple-400" />
+                                        <Database className="w-3.5 h-3.5 text-white" />
                                         Content Inventory
                                     </span>
                                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
@@ -2234,7 +2234,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">Scripts Stripped</span>
-                                            <span className="text-base font-bold text-amber-300">
+                                            <span className="text-base font-bold text-white">
                                                 {pageDetail?.content_inventory?.scripts ?? 0}
                                             </span>
                                         </div>
@@ -2246,25 +2246,25 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">Forms / Inputs</span>
-                                            <span className="text-base font-bold text-red-400">
+                                            <span className="text-base font-bold text-white">
                                                 {pageDetail?.content_inventory?.forms ?? 0} / {pageDetail?.content_inventory?.inputs ?? 0}
                                             </span>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">Links</span>
-                                            <span className="text-base font-bold text-red-400">
+                                            <span className="text-base font-bold text-white">
                                                 {pageDetail?.content_inventory?.links ?? 0}
                                             </span>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">Iframes Neutralized</span>
-                                            <span className="text-base font-bold text-purple-300">
+                                            <span className="text-base font-bold text-white">
                                                 {pageDetail?.content_inventory?.iframes ?? 0}
                                             </span>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-black/40 border border-white/5">
                                             <span className="text-slate-400 block text-[10px]">External Domains</span>
-                                            <span className="text-base font-bold text-orange-400">
+                                            <span className="text-base font-bold text-white">
                                                 {pageDetail?.content_inventory?.external_domains_count ?? 0}
                                             </span>
                                         </div>
@@ -2605,10 +2605,10 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
             </div>
 
             {/* Consolidated Bottom Status / Security Strip */}
-            <div className="px-3.5 py-1.5 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between gap-2 shrink-0 select-none font-mono">
+            <div className="px-3.5 py-1.5 bg-black border-t border-[#1A1A1A] text-[11px] text-[#808080] flex items-center justify-between gap-2 shrink-0 select-none font-mono">
                 <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="flex items-center gap-1.5 text-white font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                         Read-only Sandbox
                     </span>
                     <span className="text-slate-600 hidden sm:inline">•</span>
@@ -2621,7 +2621,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                 <div className="flex items-center gap-3 text-[10px] text-slate-500">
                     <span>Render: {pageDetail?.load_time_ms ?? 0}ms</span>
                     <span className="text-slate-700">•</span>
-                    <span className="text-emerald-500/80 font-medium">VM Isolated</span>
+                    <span className="text-white font-medium">VM Isolated</span>
                 </div>
             </div>
         </div>

@@ -261,6 +261,8 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
     const [isNavigating, setIsNavigating] = useState<boolean>(false);
     const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
     const [blockedActionNotice, setBlockedActionNotice] = useState<string | null>(null);
+    const [urlInputValue, setUrlInputValue] = useState<string>('');
+    const [isUrlInputFocused, setIsUrlInputFocused] = useState<boolean>(false);
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -518,15 +520,16 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
 
     const isUsablePageRepresentation = (pageObj: any): boolean => {
         if (!pageObj) return false;
-        const st = String(pageObj.scan_status || '').toUpperCase();
-        if (['FAILED', 'TIMEOUT', 'UNAVAILABLE', 'BLOCKED', 'QUEUED', 'ANALYZING'].includes(st)) {
-            return false;
-        }
-        if (pageObj.error_type || pageObj.page_available === false) {
-            return false;
-        }
         const htmlStr = String(pageObj.safe_html || '');
         if (!htmlStr || htmlStr.includes('PAGE NAVIGATION FAILED')) {
+            return false;
+        }
+        const st = String(pageObj.scan_status || '').toUpperCase();
+        if (['QUEUED', 'ANALYZING'].includes(st)) {
+            return false;
+        }
+        // If we have valid safe_html and page is not explicitly an unrendered failure, it is usable
+        if (pageObj.page_available === false && !htmlStr) {
             return false;
         }
         return true;
@@ -708,7 +711,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
         targetUrlNoHash: string,
         forceRetry = false
     ): Promise<{ ok: boolean; status: number; body: any }> => {
-        const navKey = `${sid}::${normalizeComparableUrl(targetUrlNoHash)}`;
+        const navKey = `${sid || 'direct'}::${normalizeComparableUrl(targetUrlNoHash)}`;
         if (!forceRetry) {
             const existingPromise = inflightNavRef.current.get(navKey);
             if (existingPromise) {
@@ -716,15 +719,41 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
             }
         }
         const navPromise = (async () => {
-            const res = await fetch(`${backendUrl}/safe-view/session/${encodeURIComponent(sid)}/navigate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    url: targetUrlNoHash,
-                    device_profile: viewportSize,
-                    ...(forceRetry ? { retry: true } : {}),
-                }),
-            });
+            let res: Response | null = null;
+            if (sid) {
+                try {
+                    res = await fetch(`${backendUrl}/safe-view/session/${encodeURIComponent(sid)}/navigate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: targetUrlNoHash,
+                            device_profile: viewportSize,
+                            ...(forceRetry ? { retry: true } : {}),
+                        }),
+                    });
+                } catch (_) {
+                    res = null;
+                }
+            }
+
+            // Fallback to fast-load if session missing, expired (404), or unreachable
+            if (!res || res.status === 404) {
+                try {
+                    res = await fetch(`${backendUrl}/safe-view/fast-load`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: targetUrlNoHash,
+                            device_profile: viewportSize,
+                            session_id: sid || undefined,
+                            retry: forceRetry,
+                        }),
+                    });
+                } catch (netErr: any) {
+                    return { ok: false, status: 503, body: { reason: 'Backend connection failed' } };
+                }
+            }
+
             const body = await res.json().catch(() => ({}));
             return { ok: res.ok, status: res.status, body };
         })().finally(() => {
@@ -807,11 +836,7 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
             }
         }
 
-        const sid = effectiveSessionId;
-        if (!sid) {
-            showBlockedNotice('Read-only session unavailable. Run a scan first.');
-            return;
-        }
+        const sid = effectiveSessionId || '';
 
         // Keep current page visible while loading in background — update address bar & progress bar immediately
         setPendingNavUrl(resolvedNoHash);
@@ -860,6 +885,9 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
 
             const pageObj = result.body?.page || result.body;
             const newPageId: string = result.body?.page_id || pageObj?.page_id;
+            if (result.body?.session_id && result.body.session_id !== effectiveSessionId) {
+                setEffectiveSessionId(result.body.session_id);
+            }
             if (newPageId && pageObj) {
                 const pageUrl = pageObj.url || resolvedNoHash;
                 const usable = isUsablePageRepresentation(pageObj);
@@ -1441,6 +1469,28 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                         .catch(() => {});
                 }
             } else {
+                const navTargetUrl = targetUrl || currentDisplayUrl;
+                if (navTargetUrl && !pageDetail?.safe_html) {
+                    try {
+                        const fastRes = await fetch(`${backendUrl}/safe-view/fast-load`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: navTargetUrl, device_profile: viewportSize, session_id: sid || undefined }),
+                        });
+                        if (fastRes.ok) {
+                            const fastData = await fastRes.json();
+                            const fastPage = fastData.page || fastData;
+                            if (fastPage && isUsablePageRepresentation(fastPage)) {
+                                if (fastData.session_id && fastData.session_id !== effectiveSessionId) {
+                                    setEffectiveSessionId(fastData.session_id);
+                                }
+                                pageCacheRef.current.set(getCacheKey(fastData.session_id || sid, pageId), fastPage);
+                                applyLoadedPageData(pageId, fastPage);
+                                return;
+                            }
+                        }
+                    } catch (_) {}
+                }
                 const errJson = res.errJson || {};
                 const isExpired = errJson.error_code === 'SESSION_EXPIRED' || (errJson.message && errJson.message.toLowerCase().includes('expired'));
                 setSafeViewStatus(isExpired ? 'SESSION_EXPIRED' : 'UNAVAILABLE');
@@ -1666,6 +1716,12 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
         return `${activePreset.width}px`;
     };
 
+    useEffect(() => {
+        if (!isUrlInputFocused && currentDisplayUrl) {
+            setUrlInputValue(currentDisplayUrl);
+        }
+    }, [currentDisplayUrl, isUrlInputFocused]);
+
     // ── Unified Modern Browser Omnibar / Toolbar ──
     const renderBrowserToolbar = () => {
         return (
@@ -1705,29 +1761,66 @@ export const SafeWebViewer: React.FC<SafeWebViewerProps> = ({
                     </div>
                 </div>
 
-                {/* Center: Sleek Unified Address Bar */}
+                {/* Center: Sleek Unified Address Bar with Interactive Input */}
                 <div className="flex-1 min-w-0 max-w-3xl mx-1 sm:mx-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border border-slate-800 text-xs shadow-inner">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            const target = (urlInputValue || currentDisplayUrl || '').trim();
+                            if (target) {
+                                navigateByUrl(target);
+                                (document.activeElement as HTMLElement)?.blur();
+                            }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/90 border transition-all text-xs shadow-inner ${
+                            isUrlInputFocused ? 'border-red-500/80 ring-1 ring-red-500/30' : 'border-slate-800'
+                        }`}
+                    >
                         <Lock className="w-3.5 h-3.5 text-white shrink-0" />
                         <span className="hidden sm:inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-white bg-white/10 px-1.5 py-0.5 rounded border border-white/20 shrink-0">
                             Safe View
                         </span>
                         <div className="h-3 w-px bg-slate-800 hidden sm:block shrink-0" />
-                        <span className="truncate text-slate-200 font-mono text-[11px] sm:text-xs flex-1 select-all" title={currentDisplayUrl}>
-                            {currentDisplayUrl}
-                        </span>
-                        {isNavigating && (
+                        <input
+                            type="text"
+                            value={isUrlInputFocused ? urlInputValue : (urlInputValue || currentDisplayUrl || '')}
+                            onChange={(e) => setUrlInputValue(e.target.value)}
+                            onFocus={() => {
+                                setIsUrlInputFocused(true);
+                                setUrlInputValue(currentDisplayUrl || '');
+                            }}
+                            onBlur={() => {
+                                setIsUrlInputFocused(false);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    setUrlInputValue(currentDisplayUrl || '');
+                                    (e.target as HTMLInputElement).blur();
+                                }
+                            }}
+                            placeholder="Enter URL to safely inspect (e.g. https://example.com)..."
+                            className="bg-transparent text-slate-100 font-mono text-[11px] sm:text-xs flex-1 min-w-0 outline-none border-0 p-0 focus:ring-0 placeholder:text-slate-500 select-all"
+                            aria-label="Target website address"
+                        />
+                        {isNavigating ? (
                             <span className="flex items-center gap-1.5 text-[10px] text-white font-medium shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
                                 <span className="hidden md:inline">Loading...</span>
                             </span>
-                        )}
+                        ) : isUrlInputFocused || (urlInputValue && urlInputValue !== currentDisplayUrl) ? (
+                            <button
+                                type="submit"
+                                className="px-2 py-0.5 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-semibold tracking-wider uppercase transition-colors shrink-0 cursor-pointer"
+                            >
+                                Go
+                            </button>
+                        ) : null}
                         {(pageDetail?.http_status && pageDetail.http_status >= 400) || (activePage?.http_status && activePage.http_status >= 400) ? (
                             <span className="px-1.5 py-0.5 rounded bg-[#1A1A1A] text-white border border-[#808080] text-[10px] font-bold font-mono shrink-0">
                                 HTTP {pageDetail?.http_status || activePage?.http_status}
                             </span>
                         ) : null}
-                    </div>
+                    </form>
                 </div>
 
                 {/* Right: Essential Tools & View Switcher */}

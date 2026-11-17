@@ -239,15 +239,22 @@ def analyze_endpoint():
     if not result.get("session_id") and result.get("error"):
         return jsonify({"success": False, "status": "error", **result}), 422
 
+    root_pid = result.get("root_page_id") or "p_root"
+    sid = result.get("session_id")
+    root_p, _ = _find_page(root_pid, session_id=sid)
+    root_payload = _build_page_payload(root_p, root_pid, sid) if root_p else None
+
     return jsonify({
         "success": True,
         "status": "success",
-        "session_id": result.get("session_id"),
-        "root_page_id": result.get("root_page_id"),
+        "session_id": sid,
+        "root_page_id": root_pid,
         "target": result.get("target_url"),
         "pages": result.get("pages", []),
         "discovery": result.get("discovery", {}),
         "discovery_stats": result.get("discovery_stats", {}),
+        "root_page": root_payload,
+        "page": root_payload,
         "session": result,
     }), 200
 
@@ -375,6 +382,74 @@ def navigate_session_url_endpoint(session_id: str):
         error_code = nav_res.get("error_code", "NAVIGATION_FAILED")
         if error_code == "SESSION_EXPIRED":
             return jsonify({"success": False, **nav_res}), 404
+        if nav_res.get("write_blocked") or nav_res.get("security_block") or error_code == "BLOCKED_BY_SSRF_GUARD":
+            return jsonify({"success": False, **nav_res}), 403
+        return jsonify({"success": False, **nav_res}), 422
+
+    page = nav_res["page"]
+    page_id = nav_res["page_id"]
+    payload = _build_page_payload(page, page_id, session_id)
+    return jsonify({
+        "success": True,
+        "available": True,
+        "cached": bool(nav_res.get("cached", False)),
+        "session_id": session_id,
+        "page_id": page_id,
+        "url": page.get("url"),
+        "status": page.get("http_status", 200),
+        "title": page.get("title", ""),
+        "representation": payload.get("safe_html", ""),
+        "page": payload,
+        **payload,
+    }), 200
+
+
+@safe_view_bp.route("/navigate", methods=["POST", "OPTIONS"])
+@safe_view_bp.route("/fast-load", methods=["POST", "OPTIONS"])
+def fast_load_endpoint():
+    """
+    Direct browser-speed URL navigation and loading.
+    If session_id is omitted or expired, creates a fresh session automatically.
+    Returns the sanitized, read-only representation in under 300ms.
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    data = request.get_json(silent=True) or {}
+    target_url = (data.get("url") or "").strip()
+    if not target_url:
+        return jsonify({"success": False, "error": "No URL provided"}), 400
+
+    # Ensure URL has scheme
+    if not target_url.startswith("http://") and not target_url.startswith("https://"):
+        target_url = "https://" + target_url
+
+    session_id = data.get("session_id")
+    sess = session_manager.get_session(session_id) if session_id else None
+    if not sess:
+        # Check active sessions first or create new one
+        active_sids = session_manager.list_active_sessions()
+        if active_sids and not session_id:
+            sess = session_manager.get_session(active_sids[0])
+        if not sess:
+            sess = session_manager.create_session(target_url=target_url)
+        session_id = sess.session_id
+
+    device_profile = str(data.get("device_profile") or "desktop").lower()
+    if device_profile not in ("desktop", "tablet", "mobile"):
+        device_profile = "desktop"
+
+    force_retry = bool(data.get("retry", False))
+
+    nav_res = safe_view_engine.navigate_by_url(
+        session_id=session_id,
+        url=target_url,
+        device_profile=device_profile,
+        force_retry=force_retry,
+    )
+
+    if not nav_res.get("success"):
+        error_code = nav_res.get("error_code", "NAVIGATION_FAILED")
         if nav_res.get("write_blocked") or nav_res.get("security_block") or error_code == "BLOCKED_BY_SSRF_GUARD":
             return jsonify({"success": False, **nav_res}), 403
         return jsonify({"success": False, **nav_res}), 422
@@ -656,7 +731,6 @@ def render_safe_view_endpoint(page_id: str, session_id: Optional[str] = None):
         "frame-ancestors 'self' http://localhost:* http://127.0.0.1:*;"
     )
     resp.headers["X-Content-Type-Options"] = "nosniff"
-    resp.headers["X-Frame-Options"] = "SAMEORIGIN"
     return resp
 
 

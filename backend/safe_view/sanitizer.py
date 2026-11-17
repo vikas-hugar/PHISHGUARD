@@ -51,7 +51,9 @@ _MAX_CSS_CACHE_ENTRIES = 500
 # Regex patterns for stripping dangerous tags and attributes
 _SCRIPT_RE = re.compile(r"<\s*script[^>]*>[\s\S]*?<\s*/\s*script\s*>", re.IGNORECASE)
 _NOSCRIPT_RE = re.compile(r"<\s*noscript[^>]*>([\s\S]*?)<\s*/\s*noscript\s*>", re.IGNORECASE)
-_HTML_COMMENT_RE = re.compile(r"<!--(?!\[if)[\s\S]*?-->", re.IGNORECASE)
+_IE_DOWNLEVEL_HIDDEN_RE = re.compile(r"<!--\[if\s+(?:lt|lte|!\s*ie)\b[\s\S]*?<!\[endif\]-->", re.IGNORECASE)
+_IE_CONDITIONAL_MARKER_RE = re.compile(r"<!--\[if\b[\s\S]*?\]><!-->|<!--<!\[endif\]-->|<!\[endif\]-->|<!--\[if\b[\s\S]*?\]>", re.IGNORECASE)
+_HTML_COMMENT_RE = re.compile(r"<!--[\s\S]*?-->", re.IGNORECASE)
 _META_REFRESH_RE = re.compile(r"<\s*meta[^>]*http-equiv\s*=\s*['\"]?refresh['\"]?[^>]*>", re.IGNORECASE)
 _BASE_TAG_RE = re.compile(r"<\s*base[^>]*>", re.IGNORECASE)
 _COLOR_SCHEME_RE = re.compile(r"<\s*meta[^>]*name\s*=\s*['\"]?color-scheme['\"]?[^>]*>", re.IGNORECASE)
@@ -223,6 +225,8 @@ class HTMLSanitizer:
 
         # Step 2: Strip active executable elements & HTML comments
         clean = _SCRIPT_RE.sub("", source_content)
+        clean = _IE_DOWNLEVEL_HIDDEN_RE.sub("", clean)
+        clean = _IE_CONDITIONAL_MARKER_RE.sub("", clean)
         clean = _HTML_COMMENT_RE.sub("", clean)
         clean = self._promote_async_stylesheets(clean)
         clean = self._promote_nav_and_toggle_controls(clean, base_url)

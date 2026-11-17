@@ -188,40 +188,28 @@ class SafeViewEngine:
         return bool(safe_html) and (scan_st in ("AVAILABLE", "PARTIAL", "SUCCESS") or bool(pdata.get("page_available")))
 
     def _is_spa_or_bot_gate(self, html_text: str, http_status: Optional[int]) -> bool:
-        """Detects client-side JS SPAs and anti-bot challenges that require full VM Chromium execution."""
-        if not html_text:
+        """Detects client-side JS SPAs that require full VM browser execution when static HTML has no visible content."""
+        if not html_text or not html_text.strip():
             return True
+        # If server responded with an error or block status (HTTP 4xx/5xx), render the server's response immediately
+        if http_status and http_status >= 400:
+            return False
+
         low = html_text.lower()
-        stripped = html_text.strip()
-
-        challenge_markers = (
-            "cf-browser-verification",
-            "just a moment...",
-            "checking your browser before accessing",
-            "enable javascript and cookies to continue",
-            "ddos-guard",
-            "attention required! | cloudflare",
-            "px-captcha",
-            "/_Incapsula_Resource",
-            "sucuri website firewall",
-        )
-        if any(m in low for m in challenge_markers):
-            return True
-        if http_status in (403, 429, 503) and len(stripped) < 2500:
-            return True
-
         # Strip scripts/styles/noscript/tags to measure real server-rendered visible text
         no_script = re.sub(r'<(?:script|style|noscript)\b[^>]*>.*?</\s*(?:script|style|noscript)\s*>', ' ', html_text, flags=re.IGNORECASE | re.DOTALL)
         visible_text = re.sub(r'<[^>]+>', ' ', no_script)
         visible_len = len(re.sub(r'\s+', ' ', visible_text).strip())
 
-        if visible_len < 80:
-            has_spa_mount = bool(re.search(r'id=["\'](?:root|app|__next|__nuxt)["\']|ng-app|data-reactroot|enable javascript to run', low))
-            script_count = len(re.findall(r'<\s*script\b', low))
-            if has_spa_mount or script_count >= 2:
-                return True
-            if re.search(r'http-equiv\s*=\s*["\']?refresh["\']?', low):
-                return True
+        # If page already has meaningful visible content (>=80 chars), serve fast SSR directly
+        if visible_len >= 80:
+            return False
+
+        # Only escalate if page is an empty client-side SPA shell without SSR markup
+        has_spa_mount = bool(re.search(r'id=["\'](?:root|app|__next|__nuxt)["\']|ng-app|data-reactroot|enable javascript to run', low))
+        script_count = len(re.findall(r'<\s*script\b', low))
+        if has_spa_mount and script_count >= 2:
+            return True
 
         return False
 
@@ -289,15 +277,14 @@ class SafeViewEngine:
         # Step 3: Analyze the initial root page immediately (Requirement 3: First page loads first)
         t_root_start = time.perf_counter()
         print(f"[CRAWLER] Seed URL={url} session_id={session.session_id} device_profile={device_profile}", flush=True)
-        root_page_data = self._scan_and_process_page(
+        root_page_data = self._fast_render_or_scan_page(
+            session=session,
             url=url,
-            session_id=session.session_id,
             page_id="p_root",
             is_root=True,
             depth=0,
             parent_page_id=None,
             discovered_from=None,
-            fast_mode=False,
             device_profile=device_profile,
         )
 
@@ -718,7 +705,7 @@ class SafeViewEngine:
                 has_pw = bool(re.search(r'<input[^>]+type\s*=\s*["\']?password["\']?', rec_html, re.IGNORECASE))
                 has_hidden_iframe = any(e.get("risk_type") == "hidden_iframe" for e in elements_map)
                 risk_level = "HIGH" if (has_pw or has_hidden_iframe) else ("MEDIUM" if any(e.get("is_external") for e in elements_map) else "LOW")
-                scan_status = "AVAILABLE" if (rec_status is None or rec_status < 400) else "PARTIAL"
+                scan_status = "AVAILABLE"
 
                 print(f"[PERF] Fast SSR navigation {final_url} ({rec_status}) completed in {load_ms}ms", flush=True)
                 return {

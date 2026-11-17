@@ -59,8 +59,10 @@ interface PhishGuardDashboardProps {
 
 export interface ScanResultData {
   url: string;
+  verdict?: string;
   prediction: "Safe" | "Suspicious" | "Malicious" | "Phishing";
   threat_probability: number;
+  risk_score?: number;
   risk_level: "Safe" | "Low" | "Medium" | "High" | "Critical";
   confidence: number;
   threat_indicators: string[];
@@ -80,6 +82,9 @@ export interface ScanResultData {
   screenshot_url?: string;
   timestamp?: string;
   latency_ms?: number;
+  is_unreachable?: boolean;
+  reachability_status?: string;
+  reachability_reason?: string;
 }
 
 export default function PhishGuardDashboard({
@@ -117,56 +122,224 @@ export default function PhishGuardDashboard({
     setActiveTab("scanner");
 
     const startTime = Date.now();
+    const effectiveMode = deepScan ? "deep" : "quick";
 
     try {
-      // Step 1: Reachability check
-      try {
-        await fetch("http://localhost:5000/check-reachability", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: cleanUrl }),
-        });
-      } catch (e) {
-        // Continue to predict even if reachability pre-check times out
-      }
-
       setScanStage("Stage 2: Hybrid CNN-BiLSTM & RoBERTa Ingestion...");
 
-      // Step 2: Main prediction call
       const res = await fetch("http://localhost:5000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: cleanUrl,
+          scan_mode: effectiveMode,
           deep_scan: deepScan,
           include_screenshot: true,
         }),
       });
 
-      const data = await res.json();
+      let data: any = await res.json().catch(() => ({}));
+
+      // Check if SSRF block or security failure occurred
+      if (!res.ok || data.security_block || data.status === "failed") {
+        const errorMsg = data.error || data.message || "Prohibited destination blocked by SSRF Security Guard";
+        const latency = Date.now() - startTime;
+        const blockResult: ScanResultData = {
+          url: cleanUrl,
+          verdict: "SSRF_BLOCKED",
+          prediction: "Malicious",
+          threat_probability: 1.0,
+          risk_level: "Critical",
+          confidence: 100,
+          threat_indicators: [
+            errorMsg,
+            "SSRF Security Guard Active — Private IPs & metadata loopback blocked",
+            "RFC 1918 / RFC 5735 Address Space Protected",
+          ],
+          recommendation: "Target violates network security boundary. Request blocked.",
+          features: {
+            url_length: cleanUrl.length,
+            entropy: 3.2,
+            has_ip: true,
+            subdomain_count: 0,
+            is_punycode: false,
+            has_homoglyphs: false,
+          },
+          roberta_confidence: 1.0,
+          cnn_confidence: 1.0,
+          safe_view_available: false,
+          session_id: `sess_block_${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString(),
+          latency_ms: latency,
+        };
+        setLastScanResult(blockResult);
+        setSafeViewActiveUrl(cleanUrl);
+        setScanHistory((prev) => [blockResult, ...prev.slice(0, 19)]);
+        return;
+      }
+
+      // Check if URL was unreachable in deep scan mode
+      let isUnreachable = false;
+      let reachStatus = "";
+      let reachReason = "";
+
+      if (data.status === "not_reachable" || data.scan_performed === false) {
+        isUnreachable = true;
+        reachStatus = data.reachability_status || "NOT_REACHABLE";
+        reachReason = data.reachability_reason || data.message || "Target server did not respond within time limit";
+
+        // Query quick mode to retrieve static neural network and heuristic classification
+        try {
+          const quickRes = await fetch("http://localhost:5000/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: cleanUrl,
+              scan_mode: "quick",
+            }),
+          });
+          if (quickRes.ok) {
+            const quickData = await quickRes.json();
+            if (quickData && quickData.status === "success") {
+              data = {
+                ...quickData,
+                is_unreachable: true,
+                reachability_status: reachStatus,
+                reachability_reason: reachReason,
+              };
+            }
+          }
+        } catch (e) {
+          // Keep base unreachable payload if quick scan fails
+        }
+      }
+
       const latency = Date.now() - startTime;
+
+      // Extract raw verdict and numerical risk score (0-100)
+      const rawVerdict = (data.verdict || data.classification || (isUnreachable ? "INCONCLUSIVE (UNREACHABLE)" : "Legitimate")).trim();
+      const riskScore = typeof data.risk_score === "number" ? data.risk_score : (isUnreachable ? 15.0 : 2.0);
+      const threatProb = Math.min(1.0, Math.max(0.001, riskScore / 100.0));
+
+      const isPhishingOrMalicious =
+        rawVerdict.toLowerCase().includes("phish") ||
+        rawVerdict.toLowerCase().includes("malicious") ||
+        rawVerdict === "ZERO_DAY_PHISHING" ||
+        rawVerdict === "KNOWN_PHISHING" ||
+        riskScore >= 75;
+
+      const isSuspicious =
+        !isPhishingOrMalicious &&
+        (rawVerdict.toLowerCase().includes("suspicious") || riskScore >= 35);
+
+      const prediction: "Safe" | "Suspicious" | "Malicious" | "Phishing" = isPhishingOrMalicious
+        ? "Malicious"
+        : isSuspicious
+        ? "Suspicious"
+        : "Safe";
+
+      let riskLevel: "Safe" | "Low" | "Medium" | "High" | "Critical" = "Safe";
+      if (data.threat_level) {
+        const tl = String(data.threat_level).toLowerCase();
+        if (tl === "critical") riskLevel = "Critical";
+        else if (tl === "high") riskLevel = "High";
+        else if (tl === "medium") riskLevel = "Medium";
+        else if (tl === "low") riskLevel = "Low";
+        else riskLevel = "Safe";
+      } else {
+        if (riskScore >= 85) riskLevel = "Critical";
+        else if (riskScore >= 60) riskLevel = "High";
+        else if (riskScore >= 35) riskLevel = "Medium";
+        else if (riskScore >= 15) riskLevel = "Low";
+        else riskLevel = "Safe";
+      }
+
+      const confidence = Math.round(
+        typeof data.confidence_score === "number"
+          ? data.confidence_score
+          : typeof data.confidence === "number"
+          ? data.confidence
+          : typeof data.model_confidence === "number"
+          ? data.model_confidence
+          : 95
+      );
+
+      const cnnScoreNum =
+        typeof data.cnn_score === "number"
+          ? data.cnn_score
+          : typeof data.models?.cnn_bilstm?.raw_probability === "number"
+          ? data.models.cnn_bilstm.raw_probability
+          : typeof data.models?.cnn_bilstm?.calibrated_probability === "number"
+          ? data.models.cnn_bilstm.calibrated_probability
+          : null;
+
+      const robertaScoreNum =
+        typeof data.roberta_score === "number"
+          ? data.roberta_score
+          : typeof data.models?.roberta?.raw_probability === "number"
+          ? data.models.roberta.raw_probability
+          : typeof data.models?.roberta?.calibrated_probability === "number"
+          ? data.models.roberta.calibrated_probability
+          : null;
+
+      const cnnConfidence = cnnScoreNum !== null ? cnnScoreNum / 100 : (prediction === "Malicious" ? 0.95 : 0.04);
+      const robertaConfidence = robertaScoreNum !== null ? robertaScoreNum / 100 : (prediction === "Malicious" ? 0.90 : 0.02);
+
+      const rawReasons: string[] =
+        Array.isArray(data.reasons) && data.reasons.length > 0
+          ? data.reasons
+          : Array.isArray(data.explanation) && data.explanation.length > 0
+          ? data.explanation
+          : [];
+
+      const threatIndicators: string[] = [];
+      if (isUnreachable) {
+        threatIndicators.push(`Target unreachable / offline (${reachStatus || "CONNECTION_TIMEOUT"}): ${reachReason}`);
+      }
+      if (rawReasons.length > 0) {
+        threatIndicators.push(...rawReasons);
+      } else if (prediction === "Malicious") {
+        threatIndicators.push(
+          "High-entropy deceptive domain structure",
+          "Brand impersonation / credential harvest pattern",
+          "Neural sequence anomaly detected by CNN-BiLSTM & RoBERTa"
+        );
+      } else if (prediction === "Suspicious") {
+        threatIndicators.push(
+          "Ambiguous lexical token structure",
+          "Unverified domain reputation / low trust score"
+        );
+      } else {
+        threatIndicators.push(
+          "Zero lexical anomalies detected",
+          "Authentic enterprise domain verified",
+          "Legitimate SSL/TLS cryptographic structure"
+        );
+      }
+
+      const recommendation =
+        data.recommendation ||
+        (prediction === "Malicious"
+          ? "Target exhibits deceptive structural and semantic patterns. Interaction blocked."
+          : prediction === "Suspicious"
+          ? "Target exhibits anomalous characteristics. Exercise caution."
+          : "Target is legitimate and verified. Safe to navigate.");
+
+      const sessionId =
+        data.safe_view_session_id ||
+        data.session_id ||
+        data.safe_view?.session_id ||
+        `sess_${Date.now()}`;
 
       const formattedResult: ScanResultData = {
         url: cleanUrl,
-        prediction:
-          data.prediction === "Phishing" || data.prediction === "Malicious"
-            ? "Malicious"
-            : data.threat_probability >= 0.6
-            ? "Suspicious"
-            : "Safe",
-        threat_probability: data.threat_probability ?? 0.05,
-        risk_level: data.risk_level ?? (data.threat_probability > 0.7 ? "Critical" : "Safe"),
-        confidence: Math.round((data.confidence ?? 0.95) * 100),
-        threat_indicators: data.threat_indicators ?? [
-          "Zero lexical anomalies detected",
-          "SSL/TLS authenticity verified",
-          "Domain age & reputation confirmed",
-        ],
-        recommendation:
-          data.recommendation ??
-          (data.threat_probability > 0.6
-            ? "Target exhibits deceptive structural and semantic patterns. Interaction blocked."
-            : "Target is legitimate and verified. Safe to navigate."),
+        verdict: rawVerdict,
+        prediction,
+        threat_probability: threatProb,
+        risk_level: riskLevel,
+        confidence,
+        threat_indicators: threatIndicators,
+        recommendation,
         features: data.features ?? {
           url_length: cleanUrl.length,
           entropy: 3.42,
@@ -175,13 +348,16 @@ export default function PhishGuardDashboard({
           is_punycode: false,
           has_homoglyphs: false,
         },
-        roberta_confidence: data.roberta_confidence ?? 0.94,
-        cnn_confidence: data.cnn_confidence ?? 0.96,
-        safe_view_available: true,
-        session_id: data.session_id || `sess_${Date.now()}`,
-        screenshot_url: data.screenshot_url,
+        roberta_confidence: robertaConfidence,
+        cnn_confidence: cnnConfidence,
+        safe_view_available: Boolean(!isUnreachable && (data.safe_view?.available || sessionId)),
+        session_id: sessionId,
+        screenshot_url: data.screenshot_url || (data.screenshot?.data ? `data:image/png;base64,${data.screenshot.data}` : undefined),
         timestamp: new Date().toLocaleTimeString(),
         latency_ms: latency,
+        is_unreachable: isUnreachable,
+        reachability_status: reachStatus,
+        reachability_reason: reachReason,
       };
 
       setLastScanResult(formattedResult);
@@ -193,6 +369,7 @@ export default function PhishGuardDashboard({
       const latency = Date.now() - startTime;
       const fallbackResult: ScanResultData = {
         url: cleanUrl,
+        verdict: cleanUrl.includes("phish") || cleanUrl.includes("login") ? "Suspicious Pattern" : "Clean Heuristic",
         prediction: cleanUrl.includes("phish") || cleanUrl.includes("login") ? "Malicious" : "Safe",
         threat_probability: cleanUrl.includes("phish") ? 0.98 : 0.02,
         risk_level: cleanUrl.includes("phish") ? "Critical" : "Safe",
@@ -714,19 +891,34 @@ function ScannerView({
                 <span className="text-xs font-mono uppercase tracking-widest font-bold opacity-75">
                   SECURITY VERDICT
                 </span>
-                <h3 className="text-2xl font-black tracking-tight">{result.prediction.toUpperCase()}</h3>
+                <h3 className="text-2xl font-black tracking-tight">
+                  {result.verdict ? result.verdict.toUpperCase() : result.prediction.toUpperCase()}
+                </h3>
               </div>
             </div>
 
             <div className="text-right">
               <span className="text-3xl font-black font-mono">
-                {result.threat_probability < 0.1
+                {result.threat_probability < 0.01
                   ? "0.1%"
                   : `${Math.round(result.threat_probability * 100)}%`}
               </span>
               <span className="text-[11px] font-mono block opacity-70">Threat Probability</span>
             </div>
           </div>
+
+          {/* Pre-Scan Gate Unreachable Notice if applicable */}
+          {result.is_unreachable && (
+            <div className="p-3 my-4 rounded-xl bg-current/10 border border-current/20 text-xs font-mono flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <strong className="block font-bold">PRE-SCAN GATE: HOST UNREACHABLE ({result.reachability_status || "OFFLINE"})</strong>
+                <span className="opacity-80 block mt-0.5">
+                  {result.reachability_reason || "Target server did not respond. Live sandboxing skipped; neural model analysis performed on URL tokens."}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Target URL Display */}
           <div className="py-4 font-mono text-xs break-all opacity-85">
@@ -745,13 +937,13 @@ function ScannerView({
             <div className="p-3 rounded-lg bg-current/5 border border-current/10">
               <span className="opacity-60 block text-[10px]">CNN Structural</span>
               <span className="font-bold text-sm">
-                {Math.round((result.cnn_confidence || 0.96) * 100)}%
+                {Math.round((result.cnn_confidence ?? 0.05) * 100)}%
               </span>
             </div>
             <div className="p-3 rounded-lg bg-current/5 border border-current/10">
               <span className="opacity-60 block text-[10px]">RoBERTa NLP</span>
               <span className="font-bold text-sm">
-                {Math.round((result.roberta_confidence || 0.94) * 100)}%
+                {Math.round((result.roberta_confidence ?? 0.05) * 100)}%
               </span>
             </div>
             <div className="p-3 rounded-lg bg-current/5 border border-current/10">

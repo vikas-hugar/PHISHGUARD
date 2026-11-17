@@ -806,6 +806,34 @@ def predict():
             detection_time_ms = round((time.perf_counter() - start_time) * 1000, 1)
             timing["total_ms"] = detection_time_ms
 
+            # Lightweight static AI evaluation on URL string even when host is unreachable
+            static_url_norm = normalize_url_local(url)
+            static_domain = extract_domain(static_url_norm)
+            static_repo = check_global_repository(static_url_norm)
+            static_rule_score, static_rule_reasons = calculate_rule_score(static_url_norm, static_domain)
+            static_cnn = None
+            static_roberta = None
+            if ENABLE_DEEP_LEARNING and model is not None:
+                try:
+                    static_cnn = round(float(model.predict(preprocess_url(static_url_norm), verbose=0)[0][0]) * 100, 1)
+                except Exception:
+                    pass
+            if roberta_model is not None:
+                try:
+                    static_roberta = round(roberta_predict(static_url_norm) * 100, 1)
+                except Exception:
+                    pass
+
+            static_analysis = {
+                "cnn_score": static_cnn,
+                "roberta_score": static_roberta,
+                "heuristic_score": float(static_rule_score),
+                "reasons": static_rule_reasons,
+                "repo_match": static_repo.get("found", False),
+                "matched_brand": static_repo.get("target_brand"),
+                "threat_type": static_repo.get("threat_type"),
+            }
+
             return jsonify({
                 "status": "not_reachable",
                 "scan_performed": False,
@@ -820,6 +848,9 @@ def predict():
                 "model_confidence": 0,
                 "threat_level": "None",
                 "risk_level": "None",
+                "static_analysis": static_analysis,
+                "cnn_score": static_cnn,
+                "roberta_score": static_roberta,
                 "reachability_status": reachability["status"],
                 "reachability_reason": reachability["reason"],
                 "message": "The URL could not be reached, so full security analysis was not performed.",

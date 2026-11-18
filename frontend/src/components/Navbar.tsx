@@ -55,7 +55,12 @@ const Navbar: React.FC = () => {
                             >
                                 <PhishGuardLogo size={36} />
                             </div>
-                            <div className="w-[1.5px] h-6 bg-white/70 rounded-full" />
+                            <img
+                                src="/brand-divider-white.png"
+                                alt=""
+                                aria-hidden="true"
+                                className="h-6 w-[3px] shrink-0 select-none object-fill"
+                            />
                             <span className="text-base font-extrabold tracking-wider text-white">
                                 PHISHGUARD <span style={{ color: '#EF4444' }}>AI</span>
                             </span>

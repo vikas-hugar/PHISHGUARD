@@ -96,7 +96,12 @@ function LandingNavbar({
         {/* Brand */}
         <div className="flex items-center gap-3.5">
           <img src="/phishguard-logo.png" alt="PhishGuard" width="34" height="34" className="shrink-0" style={{filter:'invert(1)'}}/>
-          <div className="w-[2px] h-7 bg-current rounded-full" />
+          <img
+            src="/brand-divider-white.png"
+            alt=""
+            aria-hidden="true"
+            className="h-7 w-[3.5px] shrink-0 select-none object-fill"
+          />
           <span className="font-extrabold tracking-wider text-base">PHISHGUARD AI</span>
         </div>
 
@@ -695,7 +700,12 @@ function MonochromeFooter({ onLaunchScanner }: { onLaunchScanner: () => void }) 
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3.5 text-white">
           <img src="/phishguard-logo.png" alt="PhishGuard" width="32" height="32" className="shrink-0" style={{filter:'invert(1)'}}/>
-          <div className="w-[1.5px] h-6 bg-white/70 rounded-full" />
+          <img
+            src="/brand-divider-white.png"
+            alt=""
+            aria-hidden="true"
+            className="h-6 w-[3px] shrink-0 select-none object-fill"
+          />
           <span className="font-bold tracking-wider">PHISHGUARD AI</span>
           <span className="text-[#808080]">· Black & White Monochrome Edition</span>
         </div>

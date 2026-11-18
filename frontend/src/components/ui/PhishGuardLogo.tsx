@@ -17,7 +17,7 @@ const PhishGuardLogo: React.FC<PhishGuardLogoProps> = ({
 }) => {
   return (
     <img
-      src="/phishguard-logo.svg"
+      src="/phishguard-logo.png"
       alt="PhishGuard"
       width={size}
       height={size}

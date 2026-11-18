@@ -50,10 +50,10 @@ const Navbar: React.FC = () => {
                             <div
                                 className="transition-all duration-300"
                                 style={{
-                                    filter: 'invert(1) drop-shadow(0 0 6px rgba(239,68,68,0.6))',
+                                    filter: 'invert(1) drop-shadow(0 0 6px rgba(239,68,68,0.5))',
                                 }}
                             >
-                                <PhishGuardLogo size={38} />
+                                <PhishGuardLogo size={40} />
                             </div>
                             <span className="text-lg font-bold text-white">
                                 Phish<span style={{ color: '#EF4444' }}>Guard</span>

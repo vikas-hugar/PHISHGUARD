@@ -46,21 +46,18 @@ const Navbar: React.FC = () => {
                     <div className="flex items-center justify-between">
 
                         {/* Logo */}
-                        <a href="#" className="flex items-center gap-2.5 group">
+                        <a href="#" className="flex items-center gap-3 group">
                             <div
                                 className="transition-all duration-300"
                                 style={{
                                     filter: 'invert(1) drop-shadow(0 0 6px rgba(239,68,68,0.5))',
                                 }}
                             >
-                                <PhishGuardLogo size={40} />
+                                <PhishGuardLogo size={36} />
                             </div>
-                            <span className="text-lg font-bold text-white">
-                                Phish<span style={{ color: '#EF4444' }}>Guard</span>
-                                <span className="text-xs ml-1 font-semibold px-1.5 py-0.5 rounded"
-                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }}>
-                                    AI
-                                </span>
+                            <div className="w-[1.5px] h-6 bg-white/70 rounded-full" />
+                            <span className="text-base font-extrabold tracking-wider text-white">
+                                PHISHGUARD <span style={{ color: '#EF4444' }}>AI</span>
                             </span>
                         </a>
 

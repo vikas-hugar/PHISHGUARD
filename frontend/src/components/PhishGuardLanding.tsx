@@ -35,7 +35,6 @@ interface PhishGuardLandingProps {
 
 // ─── Root Landing Component ───────────────────────────────────────────────────
 export default function PhishGuardLanding({ onLaunchScanner }: PhishGuardLandingProps) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const capabilitiesRef = useRef<HTMLDivElement>(null);
 
   const scrollToCapabilities = () => {
@@ -46,11 +45,8 @@ export default function PhishGuardLanding({ onLaunchScanner }: PhishGuardLanding
 
   return (
     <div className="bg-black text-white selection:bg-white selection:text-black font-sans min-h-screen">
-      <LandingNavbar onLaunchScanner={onLaunchScanner} onScrollToSection={scrollToCapabilities} />
-
       {/* ── Section 1: Animated Inversion Circle Hero ── */}
       <InversionCircleHero
-        wrapperRef={wrapperRef}
         onLaunchScanner={onLaunchScanner}
         onExplore={scrollToCapabilities}
       />
@@ -80,61 +76,44 @@ export default function PhishGuardLanding({ onLaunchScanner }: PhishGuardLanding
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 function LandingNavbar({
+  revealComplete,
   onLaunchScanner,
   onScrollToSection,
 }: {
+  revealComplete: boolean;
   onLaunchScanner: () => void;
   onScrollToSection: () => void;
 }) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-black/90 backdrop-blur-md border-b border-[#1A1A1A] py-3.5"
-          : "bg-transparent py-5"
+      className={`fixed top-0 left-0 right-0 z-50 border-b text-white ${
+        revealComplete
+          ? "bg-black border-[#1A1A1A] py-3.5"
+          : "bg-transparent mix-blend-difference border-transparent py-5"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-sm">
-            PG
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold tracking-tight text-white text-base">
-              PHISHGUARD AI
-            </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#111111] text-[#808080] border border-[#1A1A1A]">
-              V7.0
-            </span>
-          </div>
+          <img src="/phishguard-logo.svg" alt="PhishGuard" width="32" height="32" className="shrink-0" />
+          <span className="font-extrabold tracking-tight text-base">PHISHGUARD AI</span>
         </div>
 
         {/* Links */}
-        <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest text-[#808080]">
+        <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest">
           <button
             onClick={onScrollToSection}
-            className="hover:text-white transition-colors cursor-pointer"
+            className="opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
           >
             Capabilities
           </button>
-          <a href="#workflow" className="hover:text-white transition-colors cursor-pointer">
+          <a href="#workflow" className="opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
             Workflow
           </a>
-          <a href="#technology" className="hover:text-white transition-colors cursor-pointer">
+          <a href="#technology" className="opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
             Technology
           </a>
-          <a href="#soc" className="hover:text-white transition-colors cursor-pointer">
+          <a href="#soc" className="opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
             Architecture
           </a>
         </div>
@@ -164,11 +143,9 @@ function LandingNavbar({
  * - CSS clip-path mirrors circle position to invert text colors (black layer + white clipped layer)
  */
 function InversionCircleHero({
-  wrapperRef,
   onLaunchScanner,
   onExplore,
 }: {
-  wrapperRef: React.RefObject<HTMLDivElement | null>;
   onLaunchScanner: () => void;
   onExplore: () => void;
 }) {
@@ -226,6 +203,11 @@ function InversionCircleHero({
 
   return (
     <div ref={containerRef} className="relative h-[300vh] bg-white">
+      <LandingNavbar
+        revealComplete={p2 === 1}
+        onLaunchScanner={onLaunchScanner}
+        onScrollToSection={onExplore}
+      />
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-white select-none">
         {/* Expanding black circle */}
         <div
@@ -711,10 +693,8 @@ function MonochromeFooter({ onLaunchScanner }: { onLaunchScanner: () => void }) 
     <footer className="py-16 px-4 bg-black border-t border-[#1A1A1A] text-[#808080] text-xs font-mono">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3 text-white">
-          <div className="w-6 h-6 rounded bg-white text-black font-black flex items-center justify-center text-xs">
-            PG
-          </div>
-          <span className="font-bold tracking-tight">PHISHGUARD AI V7.0</span>
+          <img src="/phishguard-logo.svg" alt="PhishGuard" width="32" height="32" className="shrink-0" />
+          <span className="font-bold tracking-tight">PHISHGUARD AI</span>
           <span className="text-[#808080]">· Black & White Monochrome Edition</span>
         </div>
 

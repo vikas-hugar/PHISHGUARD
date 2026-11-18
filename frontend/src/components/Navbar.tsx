@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Menu, X, ScanLine, BarChart2 } from 'lucide-react';
+import { Menu, X, ScanLine } from 'lucide-react';
+import PhishGuardLogo from './ui/PhishGuardLogo';
 
 const navLinks = [
     { label: 'Home', href: '#' },
@@ -46,12 +47,11 @@ const Navbar: React.FC = () => {
 
                         {/* Logo */}
                         <a href="#" className="flex items-center gap-2.5 group">
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:shadow-glow-red"
-                                style={{
-                                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
-                                    boxShadow: '0 0 15px rgba(239,68,68,0.35)',
-                                }}>
-                                <Shield className="w-5 h-5 text-white" />
+                            <div
+                                className="transition-all duration-300"
+                                style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.5))' }}
+                            >
+                                <PhishGuardLogo size={38} />
                             </div>
                             <span className="text-lg font-bold text-white">
                                 Phish<span style={{ color: '#EF4444' }}>Guard</span>

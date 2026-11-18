@@ -427,14 +427,12 @@ export default function PhishGuardDashboard({
           {/* Brand header */}
           <div className="p-6 border-b border-[#1A1A1A] flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#FFFFFF] text-[#000000] font-black flex items-center justify-center text-sm">
-                PG
-              </div>
+              <img src="/phishguard-logo.svg" alt="PhishGuard" width="36" height="36" className="shrink-0" />
               <div>
                 <h1 className="font-extrabold text-sm tracking-tight text-[#FFFFFF]">
                   PHISHGUARD AI
                 </h1>
-                <p className="text-[10px] font-mono text-[#808080]">V7.0 MONOCHROME</p>
+                <p className="text-[10px] font-mono text-[#808080]">MONOCHROME</p>
               </div>
             </div>
             <button
@@ -1280,7 +1278,7 @@ function SettingsView({ backendHealth }: { backendHealth: any }) {
             { name: "VirtualBox VM Guest Agent", status: "Connected (192.168.56.101)" },
             { name: "SSRF Private Range Filter", status: "Active (RFC 1918 Block)" },
             { name: "Global Threat Repository", status: "2.12M Signatures Loaded" },
-            { name: "Strict Monochrome Design Policy", status: "Enforced (V7.0)" },
+            { name: "Strict Monochrome Design Policy", status: "Enforced" },
           ].map((sub, i) => (
             <div
               key={i}

@@ -701,7 +701,7 @@ const DemoSection: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
         doc.setFont(undefined as any, 'bold');
-        doc.text("PHISHGUARD AI V7.0 — Unified Forensic Security Report", 20, 22);
+        doc.text("PHISHGUARD AI — Unified Forensic Security Report", 20, 22);
 
         doc.setDrawColor(0, 174, 239);
         doc.setLineWidth(0.8);

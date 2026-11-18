@@ -427,7 +427,7 @@ export default function PhishGuardDashboard({
           {/* Brand header */}
           <div className="p-6 border-b border-[#1A1A1A] flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/phishguard-logo.svg" alt="PhishGuard" width="36" height="36" className="shrink-0" />
+              <img src="/phishguard-logo.svg" alt="PhishGuard" width="36" height="36" className="shrink-0" style={{filter:'invert(1)'}}/>
               <div>
                 <h1 className="font-extrabold text-sm tracking-tight text-[#FFFFFF]">
                   PHISHGUARD AI

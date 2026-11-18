@@ -49,7 +49,9 @@ const Navbar: React.FC = () => {
                         <a href="#" className="flex items-center gap-2.5 group">
                             <div
                                 className="transition-all duration-300"
-                                style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.5))' }}
+                                style={{
+                                    filter: 'invert(1) drop-shadow(0 0 6px rgba(239,68,68,0.6))',
+                                }}
                             >
                                 <PhishGuardLogo size={38} />
                             </div>

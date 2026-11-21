@@ -226,3 +226,34 @@
     border-radius: 9999px;
   }
 }
+
+.phishguard-landing > section,
+.phishguard-landing > div > #capabilities {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 48rem;
+}
+
+.hero-scroll-glass {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 21;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  max-width: none;
+}
+
+.hero-droplet-reflection {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 22;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-droplet-reflection, .hero-scroll-glass { display: none; }
+}

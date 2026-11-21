@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import PhishGuardLanding from "./components/PhishGuardLanding";
-import PhishGuardDashboard, { DashboardTab } from "./components/PhishGuardDashboard";
+import type { DashboardTab } from "./components/PhishGuardDashboard";
+
+const PhishGuardDashboard = lazy(() => import("./components/PhishGuardDashboard"));
 
 export default function App() {
   const [currentView, setCurrentView] = useState<"landing" | "dashboard">("landing");
@@ -9,18 +11,18 @@ export default function App() {
   const handleLaunchScanner = () => {
     setInitialDashboardTab("scanner");
     setCurrentView("dashboard");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   const handleOpenDashboard = (tab: DashboardTab = "overview") => {
     setInitialDashboardTab(tab);
     setCurrentView("dashboard");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   const handleBackToLanding = () => {
     setCurrentView("landing");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   return (
@@ -31,10 +33,12 @@ export default function App() {
           onExploreCapabilities={() => {}}
         />
       ) : (
-        <PhishGuardDashboard
-          onBackToLanding={handleBackToLanding}
-          initialTab={initialDashboardTab}
-        />
+        <Suspense fallback={<p role="status" className="p-6">Loading dashboard?</p>}>
+          <PhishGuardDashboard
+            onBackToLanding={handleBackToLanding}
+            initialTab={initialDashboardTab}
+          />
+        </Suspense>
       )}
     </div>
   );

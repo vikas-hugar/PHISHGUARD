@@ -415,7 +415,7 @@ if ENABLE_DEEP_LEARNING:
                         classmethod(lambda cls, config, orig=orig_fc:
                                     orig({k: v for k, v in config.items() if k != 'quantization_config'})))
 
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, compile=False)
         with open(tokenizer_path, "rb") as handle:
             tokenizer = pickle.load(handle)
         print("[PhishGuard V6] CNN-BiLSTM model loaded successfully.")
@@ -434,7 +434,7 @@ roberta_lock = threading.Lock()
 
 
 def load_roberta_lazy():
-    global roberta_tokenizer, roberta_model, ROBERTA_READY
+    global roberta_tokenizer, roberta_model
     if not TORCH_AVAILABLE:
         return False
     with roberta_lock:
@@ -449,10 +449,10 @@ def load_roberta_lazy():
             return False
         try:
             print("[PhishGuard V6] Loading RoBERTa model (lazy background load)...")
-            roberta_tokenizer = RobertaTokenizer.from_pretrained(_ROBERTA_DIR, local_files_only=True)
-            roberta_model = RobertaForSequenceClassification.from_pretrained(_ROBERTA_DIR, local_files_only=True)
-            roberta_model.eval()
-            ROBERTA_READY = True
+            loaded_tokenizer = RobertaTokenizer.from_pretrained(_ROBERTA_DIR, local_files_only=True)
+            loaded_model = RobertaForSequenceClassification.from_pretrained(_ROBERTA_DIR, local_files_only=True)
+            loaded_model.eval()
+            roberta_tokenizer, roberta_model = loaded_tokenizer, loaded_model
             print("[PhishGuard V6] RoBERTa model loaded successfully.")
             return True
         except Exception as _e:
@@ -465,14 +465,21 @@ def load_roberta_lazy():
 # =========================================
 def preprocess_url(url):
     sequence = tokenizer.texts_to_sequences([url])
-    padded = pad_sequences(sequence, maxlen=MAX_LEN)
+    padded = pad_sequences(sequence, maxlen=MAX_LEN, padding="post", truncating="post")
     return padded
+
+
+def cnn_predict(url: str) -> float:
+    probability = float(model.predict(preprocess_url(url), verbose=0)[0][0])
+    if not 0.0 <= probability <= 1.0:
+        raise ValueError("CNN-BiLSTM returned an invalid probability")
+    return probability
 
 
 def roberta_predict(url: str) -> float:
     global roberta_model, roberta_tokenizer
     if roberta_model is None or roberta_tokenizer is None:
-        return 0.5
+        raise RuntimeError("RoBERTa is unavailable")
     try:
         inputs = roberta_tokenizer(
             url, return_tensors="pt", truncation=True, max_length=512, padding=True
@@ -482,6 +489,8 @@ def roberta_predict(url: str) -> float:
         probs = torch.softmax(logits, dim=-1)
         # In PHISHGUARD_ROBERTA_V1, Label 0 is Phishing, Label 1 is Legitimate
         p_phish = float(probs[0][0].item())
+        if not math.isfinite(p_phish):
+            raise ValueError("RoBERTa returned a non-finite probability")
 
         # Calibration for bare root domains (no path and no query)
         # When given an isolated root domain, token logits are near zero (neutral).
@@ -495,7 +504,7 @@ def roberta_predict(url: str) -> float:
         return p_phish
     except Exception as ex:
         print(f"[PhishGuard V6] RoBERTa inference error: {ex}")
-        return 0.5
+        raise
 
 
 def normalize_url_local(url):
@@ -815,10 +824,10 @@ def predict():
             static_roberta = None
             if ENABLE_DEEP_LEARNING and model is not None:
                 try:
-                    static_cnn = round(float(model.predict(preprocess_url(static_url_norm), verbose=0)[0][0]) * 100, 1)
+                    static_cnn = round(cnn_predict(static_url_norm) * 100, 1)
                 except Exception:
                     pass
-            if roberta_model is not None:
+            if load_roberta_lazy():
                 try:
                     static_roberta = round(roberta_predict(static_url_norm) * 100, 1)
                 except Exception:
@@ -941,8 +950,7 @@ def predict():
         def run_cnn():
             t = time.perf_counter()
             try:
-                processed = preprocess_url(url_norm)
-                score = float(model.predict(processed, verbose=0)[0][0])
+                score = cnn_predict(url_norm)
                 cnn_result_store["probability"] = score
                 cnn_result_store["latency_ms"] = round((time.perf_counter() - t) * 1000, 1)
             except Exception as ex:
@@ -953,10 +961,8 @@ def predict():
             t = time.perf_counter()
             try:
                 score = roberta_predict(url_norm)
-                # Only record if RoBERTa was actually loaded (not the 0.5 fallback)
-                if roberta_model is not None:
-                    roberta_result_store["probability"] = score
-                    roberta_result_store["latency_ms"] = round((time.perf_counter() - t) * 1000, 1)
+                roberta_result_store["probability"] = score
+                roberta_result_store["latency_ms"] = round((time.perf_counter() - t) * 1000, 1)
             except Exception as ex:
                 print(f"[PhishGuard V6] RoBERTa thread error: {ex}")
                 roberta_result_store["error"] = str(ex)
@@ -1727,10 +1733,7 @@ def background_warmup():
     try:
         if ENABLE_DEEP_LEARNING and model is not None and tokenizer is not None:
             print("[PhishGuard V6] Warming up CNN-BiLSTM model...")
-            dummy_seq = pad_sequences(
-                tokenizer.texts_to_sequences(["http://example.com"]), maxlen=MAX_LEN
-            )
-            model.predict(dummy_seq, verbose=0)
+            cnn_predict("http://example.com")
             MODEL_READY = True
             print("[PhishGuard V6] CNN-BiLSTM warmed up.")
     except Exception as e:
